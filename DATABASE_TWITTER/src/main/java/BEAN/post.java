@@ -1,4 +1,4 @@
-package DAO;
+package BEAN;
 
 import java.security.Timestamp;
 

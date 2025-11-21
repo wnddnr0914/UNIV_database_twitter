@@ -1,4 +1,4 @@
-package DAO;
+package BEAN;
 
 public class group {
 	private int SEQ_GROUP;

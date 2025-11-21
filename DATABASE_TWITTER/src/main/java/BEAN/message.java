@@ -1,4 +1,4 @@
-package DAO;
+package BEAN;
 
 public class message {
 	private int idMESSAGE;
