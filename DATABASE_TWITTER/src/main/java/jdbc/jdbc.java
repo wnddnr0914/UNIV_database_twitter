@@ -14,7 +14,7 @@ public class jdbc {
 
 			Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/twitter_db?serverTimezone=UTC", 
 					"root","121709");
-			System.out.println("success");
+			System.out.println("success성공이요~~");
 			Statement stmt = conn.createStatement();
 
 		} catch (SQLException ex) {
