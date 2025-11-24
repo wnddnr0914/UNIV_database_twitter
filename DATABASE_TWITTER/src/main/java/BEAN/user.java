@@ -38,5 +38,8 @@ public class user {
 	public void setPASSWORD(String pASSWORD) {
 		PASSWORD = pASSWORD;
 	}
-	
+	private boolean isFollowed; 
+
+    public boolean isFollowed() { return isFollowed; }
+    public void setFollowed(boolean isFollowed) { this.isFollowed = isFollowed; }
 }
