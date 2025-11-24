@@ -1,6 +1,6 @@
 package BEAN;
 
-import java.security.Timestamp;
+import java.sql.Timestamp;
 
 public class post {
 	private int idPOST;
@@ -33,3 +33,4 @@ public class post {
 	}
 	
 }
+
