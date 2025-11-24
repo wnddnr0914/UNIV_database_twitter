@@ -1,6 +1,6 @@
 package BEAN;
 
-import java.security.Timestamp;
+import java.sql.Timestamp;
 
 public class reply_comment {
 	private int POSTCOMMENT_SEQ_POST;

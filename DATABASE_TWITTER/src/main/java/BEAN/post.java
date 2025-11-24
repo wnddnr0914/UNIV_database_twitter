@@ -5,7 +5,7 @@ import java.sql.Timestamp;
 public class post {
 	private int idPOST;
 	private String user;
-	private long detail;
+	private String detail;
 	private Timestamp date;
 	public int getIdPOST() {
 		return idPOST;
@@ -19,10 +19,10 @@ public class post {
 	public void setUser(String user) {
 		this.user = user;
 	}
-	public long getDetail() {
+	public String getDetail() {
 		return detail;
 	}
-	public void setDetail(long detail) {
+	public void setDetail(String detail) {
 		this.detail = detail;
 	}
 	public Timestamp getDate() {

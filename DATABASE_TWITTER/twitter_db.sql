@@ -4,17 +4,17 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
 -- -----------------------------------------------------
--- Schema mydb
+-- Schema twitter_DB
 -- -----------------------------------------------------
 
 -- -----------------------------------------------------
--- Schema mydb
+-- Schema twitter_DB
 -- -----------------------------------------------------
 CREATE SCHEMA IF NOT EXISTS `twitter_DB` DEFAULT CHARACTER SET utf8 ;
 USE `twitter_DB` ;
 
 -- -----------------------------------------------------
--- Table `mydb`.`USER`
+-- Table `twitter_DB`.`USER`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`USER` (
   `idUSER` VARCHAR(20) NOT NULL,
@@ -27,7 +27,7 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`FOLLOW`
+-- Table `twitter_DB`.`FOLLOW`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`FOLLOW` (
   `FOLLOWING` VARCHAR(20) NOT NULL,
@@ -37,38 +37,37 @@ CREATE TABLE IF NOT EXISTS `twitter_DB`.`FOLLOW` (
   PRIMARY KEY (`FOLLOWING`, `FOLLOWER`),
   CONSTRAINT `fk_table1_USER`
     FOREIGN KEY (`FOLLOWING`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_table1_USER1`
     FOREIGN KEY (`FOLLOWER`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`POST`
+-- Table `twitter_DB`.`POST`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`POST` (
-  `idPOST` INT NOT NULL,
+  `idPOST` INT NOT NULL AUTO_INCREMENT,
   `USER_idUSER` VARCHAR(20) NOT NULL,
   `detail` VARCHAR(100) NULL,
-  `DATE` TIMESTAMP NULL,
-  `POSTcol` VARCHAR(45) NULL,
+  `DATE` TIMESTAMP NULL, 
   PRIMARY KEY (`idPOST`),
   INDEX `fk_POST_USER1_idx` (`USER_idUSER` ASC) VISIBLE,
   CONSTRAINT `fk_POST_USER1`
     FOREIGN KEY (`USER_idUSER`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`POST_LIKE`
+-- Table `twitter_DB`.`POST_LIKE`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`POST_LIKE` (
   `POST_idPOST` INT NOT NULL,
@@ -77,22 +76,22 @@ CREATE TABLE IF NOT EXISTS `twitter_DB`.`POST_LIKE` (
   INDEX `fk_POST_LIKE_USER1_idx` (`USER_idUSER` ASC) VISIBLE,
   CONSTRAINT `fk_POST_LIKE_POST1`
     FOREIGN KEY (`POST_idPOST`)
-    REFERENCES `mydb`.`POST` (`idPOST`)
+    REFERENCES `twitter_DB`.`POST` (`idPOST`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_POST_LIKE_USER1`
     FOREIGN KEY (`USER_idUSER`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`POST_COMMENT`
+-- Table `twitter_DB`.`POST_COMMENT`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`POST_COMMENT` (
-  `SEQ_POST` INT NOT NULL,
+  `SEQ_POST` INT NOT NULL AUTO_INCREMENT,
   `POST_idPOST` INT NOT NULL,
   `USER_idUSER` VARCHAR(20) NOT NULL,
   `DETAIL` VARCHAR(45) NULL,
@@ -102,29 +101,29 @@ CREATE TABLE IF NOT EXISTS `twitter_DB`.`POST_COMMENT` (
   INDEX `fk_POSTCOMMENT_USER1_idx` (`USER_idUSER` ASC) VISIBLE,
   CONSTRAINT `fk_POSTCOMMENT_POST1`
     FOREIGN KEY (`POST_idPOST`)
-    REFERENCES `mydb`.`POST` (`idPOST`)
+    REFERENCES `twitter_DB`.`POST` (`idPOST`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_POSTCOMMENT_USER1`
     FOREIGN KEY (`USER_idUSER`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`GROUP`
+-- Table `twitter_DB`.`GROUP`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`GROUP` (
-  `SEQ_GROUP` INT NOT NULL,
+  `SEQ_GROUP` INT NOT NULL AUTO_INCREMENT,
   `G_NAME` VARCHAR(45) NULL,
   PRIMARY KEY (`SEQ_GROUP`))
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`JOIN_GROUP`
+-- Table `twitter_DB`.`JOIN_GROUP`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`JOIN_GROUP` (
   `USER_idUSER` VARCHAR(20) NOT NULL,
@@ -133,36 +132,36 @@ CREATE TABLE IF NOT EXISTS `twitter_DB`.`JOIN_GROUP` (
   INDEX `fk_JOINGROUP_GROUP1_idx` (`GROUP_SEQ_GROUP` ASC) VISIBLE,
   CONSTRAINT `fk_JOINGROUP_USER1`
     FOREIGN KEY (`USER_idUSER`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_JOINGROUP_GROUP1`
     FOREIGN KEY (`GROUP_SEQ_GROUP`)
-    REFERENCES `mydb`.`GROUP` (`SEQ_GROUP`)
+    REFERENCES `twitter_DB`.`GROUP` (`SEQ_GROUP`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`REPLY_COMMENT`
+-- Table `twitter_DB`.`REPLY_COMMENT`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`REPLY_COMMENT` (
   `POSTCOMMENT_SEQ_POST` INT NOT NULL,
-  `RECOMMENT_SEQ` INT NOT NULL,
+  `RECOMMENT_SEQ` INT NOT NULL AUTO_INCREMENT,
   `DETAIL` VARCHAR(45) NOT NULL,
   `DATE` TIMESTAMP NULL,
   PRIMARY KEY (`RECOMMENT_SEQ`),
   CONSTRAINT `fk_REPLYCOMMENT_POSTCOMMENT1`
     FOREIGN KEY (`POSTCOMMENT_SEQ_POST`)
-    REFERENCES `mydb`.`POST_COMMENT` (`SEQ_POST`)
+    REFERENCES `twitter_DB`.`POST_COMMENT` (`SEQ_POST`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`COMMENT_LIKE`
+-- Table `twitter_DB`.`COMMENT_LIKE`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`COMMENT_LIKE` (
   `POSTCOMMENT_SEQ_POST` INT NOT NULL,
@@ -171,43 +170,43 @@ CREATE TABLE IF NOT EXISTS `twitter_DB`.`COMMENT_LIKE` (
   INDEX `fk_COMMENTLIKE_USER1_idx` (`USER_idUSER` ASC) VISIBLE,
   CONSTRAINT `fk_COMMENTLIKE_POSTCOMMENT1`
     FOREIGN KEY (`POSTCOMMENT_SEQ_POST`)
-    REFERENCES `mydb`.`POST_COMMENT` (`SEQ_POST`)
+    REFERENCES `twitter_DB`.`POST_COMMENT` (`SEQ_POST`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_COMMENTLIKE_USER1`
     FOREIGN KEY (`USER_idUSER`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`REPLYCOMMENTLIKE`
+-- Table `twitter_DB`.`REPLYCOMMENTLIKE`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`REPLYCOMMENTLIKE` (
-  `REPLYCOMMENT_RECOMMENT_SEQ` INT NOT NULL,
+  `REPLYCOMMENT_RECOMMENT_SEQ` INT NOT NULL AUTO_INCREMENT,
   `USER_idUSER` VARCHAR(20) NOT NULL,
   PRIMARY KEY (`REPLYCOMMENT_RECOMMENT_SEQ`, `USER_idUSER`),
   INDEX `fk_REPLYCOMMENTLIKE_USER1_idx` (`USER_idUSER` ASC) VISIBLE,
   CONSTRAINT `fk_REPLYCOMMENTLIKE_REPLYCOMMENT1`
     FOREIGN KEY (`REPLYCOMMENT_RECOMMENT_SEQ`)
-    REFERENCES `mydb`.`REPLY_COMMENT` (`RECOMMENT_SEQ`)
+    REFERENCES `twitter_DB`.`REPLY_COMMENT` (`RECOMMENT_SEQ`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_REPLYCOMMENTLIKE_USER1`
     FOREIGN KEY (`USER_idUSER`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`MESSAGE`
+-- Table `twitter_DB`.`MESSAGE`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `twitter_DB`.`MESSAGE` (
-  `idMESSAGE` INT NOT NULL,
+  `idMESSAGE` INT NOT NULL AUTO_INCREMENT,
   `Sender` VARCHAR(20) NOT NULL,
   `Recipient` VARCHAR(20) NOT NULL,
   `TEXT` VARCHAR(45) NULL,
@@ -217,12 +216,12 @@ CREATE TABLE IF NOT EXISTS `twitter_DB`.`MESSAGE` (
   INDEX `fk_MESSAGE_USER2_idx` (`Recipient` ASC) VISIBLE,
   CONSTRAINT `fk_MESSAGE_USER1`
     FOREIGN KEY (`Sender`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_MESSAGE_USER2`
     FOREIGN KEY (`Recipient`)
-    REFERENCES `mydb`.`USER` (`idUSER`)
+    REFERENCES `twitter_DB`.`USER` (`idUSER`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
