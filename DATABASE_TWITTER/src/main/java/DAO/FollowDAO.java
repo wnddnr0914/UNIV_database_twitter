@@ -64,4 +64,43 @@ public class FollowDAO {
             return false;
         }
     }
+    // 5. 나를 따르는 사람 수 (팔로워 수) 조회
+    public int getFollowerCount(String userId) {
+        Connection conn = getConnection();
+        int count = 0;
+        // FOLLOWER가 '나'인 경우 -> 나를 팔로우 하는 사람들
+        String sql = "SELECT COUNT(*) FROM FOLLOW WHERE FOLLOWER = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    count = rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
+
+    // 6. 내가 따르는 사람 수 (팔로잉 수) 조회
+    public int getFollowingCount(String userId) {
+        Connection conn = getConnection();
+        int count = 0;
+        // FOLLOWING이 '나'인 경우 -> 내가 팔로우 하는 사람들
+        String sql = "SELECT COUNT(*) FROM FOLLOW WHERE FOLLOWING = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    count = rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
 }
