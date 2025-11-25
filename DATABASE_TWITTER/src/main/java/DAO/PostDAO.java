@@ -105,4 +105,26 @@ public class PostDAO {
         } catch (Exception e) { e.printStackTrace(); } 
         finally { pool.freeConnection(con, pstmt, rs); }
     }
+    // 4. 특정 유저의 게시글 개수 구하기 (마이페이지용)
+    public int getPostCount(String userId) {
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int count = 0;
+        try {
+            con = pool.getConnection();
+            String sql = "SELECT COUNT(*) FROM POST WHERE USER_idUSER = ?";
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, userId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                count = rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            pool.freeConnection(con, pstmt, rs);
+        }
+        return count;
+    }
 }
