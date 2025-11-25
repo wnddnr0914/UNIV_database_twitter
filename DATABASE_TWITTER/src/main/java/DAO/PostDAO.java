@@ -165,4 +165,50 @@ public class PostDAO {
         finally { pool.freeConnection(con, pstmt, rs); }
         return list;
     }
+    // 6. 그룹 피드 가져오기 (내가 가입한 그룹의 멤버들이 쓴 글)
+    public ArrayList<post> getGroupTimeline(String myId) {
+        ArrayList<post> list = new ArrayList<>();
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            con = pool.getConnection();
+            
+            // 쿼리 설명: 
+            // 1. 내가 가입한 그룹들을 찾고 (JOIN_GROUP)
+            // 2. 그 그룹들에 가입한 모든 유저들을 찾아서 (JOIN_GROUP j2)
+            // 3. 그 유저들이 쓴 글(POST)을 가져옴
+            String sql = "SELECT p.*, u.NAME, "
+                       + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST) AS like_cnt, "
+                       + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST AND pl.USER_idUSER = ?) AS my_like "
+                       + "FROM POST p "
+                       + "JOIN USER u ON p.USER_idUSER = u.idUSER "
+                       + "WHERE p.USER_idUSER IN ("
+                       + "    SELECT DISTINCT j2.USER_idUSER "
+                       + "    FROM JOIN_GROUP j1 "
+                       + "    JOIN JOIN_GROUP j2 ON j1.GROUP_SEQ_GROUP = j2.GROUP_SEQ_GROUP "
+                       + "    WHERE j1.USER_idUSER = ? "
+                       + ") "
+                       + "ORDER BY p.idPOST DESC LIMIT 50";
+
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, myId); // 좋아요 확인용
+            pstmt.setString(2, myId); // 내 그룹 찾기용
+
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                post bean = new post();
+                bean.setIdPOST(rs.getInt("idPOST"));
+                bean.setUser(rs.getString("USER_idUSER"));
+                bean.setUserName(rs.getString("NAME"));
+                bean.setDetail(rs.getString("detail"));
+                bean.setDate(rs.getTimestamp("DATE"));
+                bean.setLikeCount(rs.getInt("like_cnt"));
+                bean.setLiked(rs.getInt("my_like") > 0);
+                list.add(bean);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        finally { pool.freeConnection(con, pstmt, rs); }
+        return list;
+    }
 }
