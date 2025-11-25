@@ -1,6 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="DAO.PostDAO, BEAN.post, java.util.ArrayList" %>
-
+<%@ page import="DAO.CommentDAO, BEAN.post_comment, BEAN.reply_comment" %>
 <%
     // [테스트용] 테스트 끝나면 꼭 주석 처리하거나 지우세요!
     // session.setAttribute("idKey", "elon_musk");
@@ -8,7 +8,7 @@
 
 <%
     // 1. 로그인 체크
-    session.setAttribute("idKey", "elon_musk");
+    // session.setAttribute("idKey", "elon_musk");
     String myId = (String) session.getAttribute("idKey"); 
     if (myId == null) {
 %>
@@ -27,6 +27,9 @@
     // 3. 게시글 리스트 가져오기
     PostDAO dao = new PostDAO();
     ArrayList<post> list = dao.getTimeline(myId, tab);
+    CommentDAO commentDao = new CommentDAO(); 
+
+
 %>
 
 <!DOCTYPE html>
@@ -101,6 +104,24 @@
         function likePost(postId) {
             location.href = 'like_action2.jsp?id=' + postId + '&tab=<%=tab%>';
         }
+        // 댓글 영역 토글 
+        function toggleComment(postId) {
+            const section = document.getElementById('comment-section-' + postId);
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        }
+     // 대댓글 영역 토글
+        function toggleReply(commentId) {
+            const section = document.getElementById('reply-section-' + commentId);
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        }
     </script>
 </head>
 <body>
@@ -162,7 +183,9 @@
                 <% } %>
             </div>
         <% } else { %>
-            <% for(post p : list) { %>
+            <% for(post p : list) { 
+            int commentCount = commentDao.getCommentCount(p.getIdPOST());
+            %>
             <div class="post-item">
                 <div class="my-profile-img"></div> <!-- 프로필 사진 -->
                 <div class="post-content">
@@ -178,8 +201,10 @@
                     <div class="post-text"><%= p.getDetail() %></div>
 
                     <div class="post-actions">
-                        <button class="action-btn" onclick="alert('댓글 기능 준비중')">💬 0</button>
-                        <button class="action-btn">🔁 0</button>
+                    <button class="action-btn" onclick="toggleComment(<%= p.getIdPOST() %>)">
+                        💬 <%= commentCount %>
+                    </button>                        
+                    <button class="action-btn">🔁 0</button>
                         
                         <!-- 좋아요 버튼 로직 -->
                         <button class="action-btn <%= p.isLiked() ? "liked" : "" %>" onclick="likePost(<%= p.getIdPOST() %>)">
@@ -188,6 +213,83 @@
                         
                         <button class="action-btn">📊</button>
                     </div>
+                    <div id="comment-section-<%= p.getIdPOST() %>" style="display:none; margin-top:10px; border-top:1px solid #eff3f4; padding-top:10px;">
+                        <!-- 댓글 작성 폼 -->
+                        <form action="comment_action.jsp" method="post" style="display:flex; gap:10px; margin-bottom:10px;">
+                            <input type="hidden" name="postId" value="<%= p.getIdPOST() %>">
+                            <input type="hidden" name="tab" value="<%=tab%>">
+                            <input type="text" name="content" placeholder="댓글을 입력하세요..." 
+                                   style="flex:1; padding:8px; border:1px solid #eff3f4; border-radius:20px; outline:none;">
+                            <button type="submit" style="background:#1d9bf0; color:white; border:none; padding:8px 16px; border-radius:20px; cursor:pointer; font-weight:bold;">
+                                댓글
+                            </button>
+                        </form>
+                        
+<%--                         <!-- 댓글 목록 -->
+                        <div class="comment-list">
+                            <% 
+                                ArrayList<post_comment> comments = commentDao.getComments(p.getIdPOST());
+                                for(post_comment c : comments) { 
+                            %>
+                            <div style="padding:10px; border-bottom:1px solid #f7f9fa;">
+                            <div style="font-weight:bold; font-size:14px; color:#0f1419;"><%= c.getUserName() %></div>
+                                <div style="font-size:14px; margin-top:4px; color:#0f1419;"><%= c.getDETAIL() %></div>
+                                <div style="color:#536471; font-size:12px; margin-top:4px;">
+                                    <%= c.getDATE().toString().substring(0, 16) %>
+                                </div>
+                            </div>
+                            <% } %>
+                        </div> --%>
+						<!-- 댓글 목록 -->
+						<div class="comment-list">
+						    <% 
+						        ArrayList<post_comment> comments = commentDao.getComments(p.getIdPOST());
+						        for(post_comment c : comments) { 
+						            int replyCount = commentDao.getReplyCount(c.getSEQ_POST());
+						    %>
+						    <div style="padding:10px; border-bottom:1px solid #f7f9fa;">
+						        <div style="font-weight:bold; font-size:14px; color:#0f1419;"><%= c.getUserName() %></div>
+						        <div style="font-size:14px; margin-top:4px; color:#0f1419;"><%= c.getDETAIL() %></div>
+						        <div style="color:#536471; font-size:12px; margin-top:4px; display:flex; gap:10px; align-items:center;">
+						            <span><%= c.getDATE().toString().substring(0, 16) %></span>
+						            <button onclick="toggleReply(<%= c.getSEQ_POST() %>)" 
+						                    style="background:none; border:none; color:#1d9bf0; cursor:pointer; font-size:12px;">
+						                💬 답글 <%= replyCount %>개
+						            </button>
+						        </div>
+						        
+						        <!-- 대댓글 영역 -->
+						        <div id="reply-section-<%= c.getSEQ_POST() %>" style="display:none; margin-left:20px; margin-top:10px; padding-left:10px; border-left:2px solid #eff3f4;">
+						            <!-- 대댓글 작성 폼 -->
+						            <form action="reply_comment_action.jsp" method="post" style="display:flex; gap:8px; margin-bottom:10px;">
+						                <input type="hidden" name="commentSeq" value="<%= c.getSEQ_POST() %>">
+						                <input type="hidden" name="tab" value="<%=tab%>">
+						                <input type="text" name="content" placeholder="답글 달기..." 
+						                       style="flex:1; padding:6px; border:1px solid #eff3f4; border-radius:15px; outline:none; font-size:13px;">
+						                <button type="submit" style="background:#1d9bf0; color:white; border:none; padding:6px 12px; border-radius:15px; cursor:pointer; font-size:13px; font-weight:bold;">
+						                    답글
+						                </button>
+						            </form>
+						            
+						            <!-- 대댓글 목록 -->
+						            <% 
+						                ArrayList<reply_comment> replies = commentDao.getReplies(c.getSEQ_POST());
+						                for(reply_comment r : replies) { 
+						            %>
+						            <div style="padding:8px; margin-bottom:6px; background:#f7f9fa; border-radius:8px;">
+						                <div style="font-weight:bold; font-size:13px; color:#0f1419;"><%= r.getUserName() %></div>
+						                <div style="font-size:13px; margin-top:2px; color:#0f1419;"><%= r.getDETAIL() %></div>
+						                <div style="color:#536471; font-size:11px; margin-top:2px;">
+						                    <%= r.getDATE().toString().substring(0, 16) %>
+						                </div>
+						            </div>
+						            <% } %>
+						        </div>
+						    </div>
+						    <% } %>
+						</div>
+                    </div>
+                    
                 </div>
             </div>
             <% } %>
