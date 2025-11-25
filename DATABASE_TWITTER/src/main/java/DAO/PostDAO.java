@@ -127,4 +127,42 @@ public class PostDAO {
         }
         return count;
     }
+    // 5. 특정 유저의 게시글 목록 가져오기 (마이페이지용)
+    // targetId: 프로필 주인, myId: 현재 로그인한 사람(좋아요 여부 확인용)
+    public ArrayList<post> getUserPosts(String targetId, String myId) {
+        ArrayList<post> list = new ArrayList<>();
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            con = pool.getConnection();
+            
+            // 쿼리: 해당 유저(targetId)가 쓴 글만 조회 + 좋아요 정보 포함
+            String sql = "SELECT p.*, u.NAME, "
+                       + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST) AS like_cnt, "
+                       + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST AND pl.USER_idUSER = ?) AS my_like "
+                       + "FROM POST p JOIN USER u ON p.USER_idUSER = u.idUSER "
+                       + "WHERE p.USER_idUSER = ? " // ⭐ 이 부분이 핵심 (특정 유저 필터링)
+                       + "ORDER BY p.idPOST DESC";
+
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, myId);     // 내가 좋아요 눌렀는지 확인용
+            pstmt.setString(2, targetId); // 게시글 주인 아이디
+
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                post bean = new post();
+                bean.setIdPOST(rs.getInt("idPOST"));
+                bean.setUser(rs.getString("USER_idUSER"));
+                bean.setUserName(rs.getString("NAME"));
+                bean.setDetail(rs.getString("detail"));
+                bean.setDate(rs.getTimestamp("DATE"));
+                bean.setLikeCount(rs.getInt("like_cnt"));
+                bean.setLiked(rs.getInt("my_like") > 0);
+                list.add(bean);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        finally { pool.freeConnection(con, pstmt, rs); }
+        return list;
+    }
 }
