@@ -1,29 +1,46 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="DAO.UserDAO" %>
-<%@ page import="BEAN.user" %> <%
-request.setCharacterEncoding("UTF-8");
-    // [Controller 역할]: URL 파라미터에서 현재 로그인한 사용자 ID를 가져옵니다.
+<%@ page import="DAO.UserDAO, DAO.PostDAO, DAO.FollowDAO" %>
+<%@ page import="BEAN.user" %>
+<%
+    request.setCharacterEncoding("UTF-8");
+
+    // 1. 파라미터로 조회할 대상 ID 가져오기
     String userId = request.getParameter("id"); 
     
-    // ⭐ 수정: UserVO -> user
-    user member = null;
-    String genderText = "정보 없음";
-    
-    // ID가 null이 아니거나 비어있지 않은 경우에만 DB 조회를 실행합니다.
-    if (userId != null && !userId.isEmpty()) {
-        UserDAO dao = new UserDAO();
-        member = dao.selectUserById(userId);
-        
-        if (member != null) {
-            // 성별 코드 변환 (1: 남성, 0: 여성)
-            genderText = (member.getGENDER() == 1) ? "남성" : "여성";
-        }
+    // 만약 파라미터가 없으면, 현재 로그인한 사람(세션)을 보여줌
+    if (userId == null || userId.isEmpty()) {
+        userId = (String) session.getAttribute("idKey");
     }
 
-    // [임시 데이터] 팔로워, 팔로잉, 게시물 수 (실제 DB 연동 필요)
-    int postsCount = 15;
-    int followersCount = 1200;
-    int followingCount = 350;
+    // 로그인도 안되어 있고 파라미터도 없으면 로그인 페이지로 보냄
+    if (userId == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    // 2. DAO 객체 생성
+    UserDAO userDAO = new UserDAO();
+    PostDAO postDAO = new PostDAO();
+    FollowDAO followDAO = new FollowDAO();
+
+    // 3. 데이터 조회
+    user member = userDAO.selectUserById(userId);
+    
+    // 카운트 변수 초기화 (DB에서 가져온 값으로 채움)
+    int postsCount = 0;
+    int followersCount = 0;
+    int followingCount = 0;
+    String genderText = "정보 없음";
+
+    if (member != null) {
+        // 성별 변환
+        genderText = (member.getGENDER() == 1) ? "남성" : "여성";
+        
+        // ⭐ DB에서 실제 데이터 개수 가져오기 ⭐
+        postsCount = postDAO.getPostCount(userId);
+        followersCount = followDAO.getFollowerCount(userId); // 나를 팔로우한 사람
+        followingCount = followDAO.getFollowingCount(userId); // 내가 팔로우한 사람
+    }
 %>
 <!DOCTYPE html>
 <html>
@@ -31,185 +48,111 @@ request.setCharacterEncoding("UTF-8");
 <meta charset="UTF-8">
 <title><%= userId %>님의 프로필</title>
 <style>
-/* CSS 변수 (globals.css에서 핵심 디자인 추출) */
-:root {
-    --background: #ffffff;
-    --foreground: oklch(0.145 0 0);
-    --primary: #030213;
-    --primary-foreground: oklch(1 0 0);
-    --secondary: #ececf0; /* muted */
-    --muted-foreground: #717182;
-    --border: rgba(0, 0, 0, 0.1);
-    --radius: 0.625rem;
-    --font-weight-medium: 500;
-}
-
-/* 기본 스타일 */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--secondary); /* 전체 배경색 */
-    padding: 0;
-    margin: 0;
-}
-.profile-container {
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: var(--background);
-    border: 1px solid var(--border);
-    min-height: 100vh;
-}
-.p-4 { padding: 16px; }
-.pt-6 { padding-top: 24px; }
-.mt-4 { margin-top: 16px; }
-
-/* 1. 헤더 영역 (ProfilePage.tsx 상단 배경) */
-.profile-header {
-    background-color: #555; /* 임시 배경색 */
-    height: 200px;
-    position: relative;
-}
-.user-avatar-wrapper {
-    padding: 0 16px; /* 좌우 패딩 */
-    margin-top: -64px; /* 아바타를 헤더 위로 올림 (size-32 / 2) */
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-}
-.profile-photo {
-    width: 128px; /* size-32 */
-    height: 128px;
-    border-radius: 50%;
-    border: 4px solid var(--background); /* 흰색 배경 테두리 */
-    background-color: #ccc; 
-    flex-shrink: 0;
-}
-.edit-button {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    border: 1px solid var(--border);
-    padding: 8px 16px;
-    border-radius: 9999px; /* full rounded */
-    font-size: 0.875rem;
-    font-weight: var(--font-weight-medium);
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.edit-button:hover {
-    opacity: 0.9;
-}
-
-/* 2. 사용자 정보 영역 */
-.user-info-section {
-    padding: 0 16px 20px 16px;
-}
-.user-name {
-    font-size: 1.5rem; /* text-2xl */
-    font-weight: bold;
-    margin-top: 10px;
-    margin-bottom: 4px;
-}
-.user-handle {
-    color: var(--muted-foreground);
-    font-size: 1rem;
-}
-.user-details {
-    margin-top: 16px;
-    color: var(--muted-foreground);
-    font-size: 0.875rem; /* text-sm */
-}
-.user-details div {
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.icon {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-    /* Calendar, User Icon 대체 */
-}
-
-/* 3. 통계 및 탭 영역 */
-.stats-grid {
-    display: flex;
-    gap: 16px;
-    margin-top: 20px;
-}
-.stat-item {
-    flex: 1;
-    text-align: center;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-}
-.stat-value {
-    font-size: 1.5rem; /* text-2xl */
-    font-weight: bold;
-    color: var(--primary);
-}
-.stat-label {
-    font-size: 0.875rem;
-    color: var(--muted-foreground);
-    margin-top: 4px;
-}
-
-/* 4. 프로필 탭 (Posts, About) */
-.profile-tabs-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    border-bottom: 1px solid var(--border);
-    margin-top: 24px;
-}
-.tab-trigger {
-    text-align: center;
-    padding: 12px 0;
-    font-weight: var(--font-weight-medium);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    color: var(--muted-foreground);
-    transition: border-color 0.2s, color 0.2s;
-}
-.tab-trigger.active {
-    border-bottom-color: #1DA1F2; /* X/Twitter Blue */
-    color: var(--primary);
-}
-
-/* 5. 탭 내용 영역 */
-.tab-content {
-    padding: 16px;
-    color: var(--muted-foreground);
-    text-align: center;
-}
+    /* CSS 변수 (globals.css 스타일 유지) */
+    :root {
+        --background: #ffffff;
+        --foreground: oklch(0.145 0 0);
+        --primary: #030213;
+        --primary-foreground: oklch(1 0 0);
+        --secondary: #ececf0;
+        --muted-foreground: #717182;
+        --border: rgba(0, 0, 0, 0.1);
+        --radius: 0.625rem;
+        --font-weight-medium: 500;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--secondary);
+        padding: 0; margin: 0;
+    }
+    .profile-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: var(--background);
+        border: 1px solid var(--border);
+        min-height: 100vh;
+    }
+    .profile-header {
+        background-color: #555;
+        height: 200px;
+        position: relative;
+    }
+    .user-avatar-wrapper {
+        padding: 0 16px;
+        margin-top: -64px;
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+    .profile-photo {
+        width: 128px; height: 128px;
+        border-radius: 50%;
+        border: 4px solid var(--background);
+        background-color: #ccc; 
+        background-image: url('default_profile.png'); /* 이미지 경로 확인 필요 */
+        background-size: cover;
+    }
+    .edit-button {
+        background-color: white; /* 버튼 배경 수정 */
+        color: var(--primary);
+        border: 1px solid #cfd9de;
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .user-info-section { padding: 0 16px 20px 16px; }
+    .user-name { font-size: 1.5rem; font-weight: bold; margin-top: 10px; margin-bottom: 4px; }
+    .user-handle { color: var(--muted-foreground); font-size: 1rem; }
+    .user-details { margin-top: 16px; color: var(--muted-foreground); font-size: 0.875rem; }
+    .user-details div { margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    
+    .stats-grid { display: flex; gap: 16px; margin-top: 20px; }
+    .stat-item { flex: 1; text-align: center; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); }
+    .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+    .stat-label { font-size: 0.875rem; color: var(--muted-foreground); margin-top: 4px; }
+    
+    /* 네비게이션용 추가 스타일 */
+    .top-nav { padding: 10px; font-weight: bold; color: white; position: absolute; top: 10px; left: 10px; z-index: 10; text-shadow: 0 0 5px rgba(0,0,0,0.5);}
+    .top-nav a { text-decoration: none; color: white; }
 </style>
 </head>
 <body>
     <div class="profile-container">
-        
+        <div class="top-nav">
+            <a href="main.jsp">← 홈으로 돌아가기</a>
+        </div>
+
         <% if (member != null) { %>
         
             <div class="profile-header"></div>
             
             <div class="user-avatar-wrapper">
                 <div class="profile-photo"></div>
-                <button class="edit-button">
-                    <span style="color: white;">회원 정보 수정</span></button>
+                <% if(userId.equals(session.getAttribute("idKey"))) { %>
+                    <button class="edit-button" onclick="alert('프로필 수정 기능은 준비중입니다.')">
+                        프로필 수정
+                    </button>
+                <% } else { 
+                     // 타인인 경우 팔로우 버튼 등을 넣을 수 있음
+                %>
+                    <button class="edit-button" onclick="alert('팔로우 기능은 검색 페이지를 이용해주세요.')">
+                        팔로우 / 언팔로우
+                    </button>
+                <% } %>
             </div>
             
             <div class="user-info-section">
                 <div class="user-names">
-                    <%-- ⭐ 수정: member.getName() -> member.getNAME() --%>
                     <h1 class="user-name"><%= member.getNAME() %></h1>
-                    <%-- ⭐ 수정: member.getIdUser() -> member.getIdUSER() --%>
                     <p class="user-handle">@<%= member.getIdUSER() %></p>
                 </div>
 
                 <div class="user-details">
-                    <div><span class="icon">📅</span> 가입일: 2024년 11월 22일 (가정)</div>
-                    <div><span class="icon">👤</span> 성별: <%= genderText %></div>
-                    <%-- ⭐ 수정: member.getBirth() -> member.getBIRTH().toString() --%>
-                    <div><span class="icon">🎂</span> 생년월일: <%= member.getBIRTH().toString() %></div>
+                    <div>📅 가입일: (정보 없음)</div> 
+                    <div>👤 성별: <%= genderText %></div>
+                    <div>🎂 생년월일: <%= member.getBIRTH().toString() %></div>
                 </div>
                 
                 <div class="stats-grid">
@@ -226,21 +169,18 @@ body {
                         <div class="stat-label">팔로잉</div>
                     </div>
                 </div>
-
-                <div class="profile-tabs-list">
-                    <div class="tab-trigger active">게시물</div>
-                    <div class="tab-trigger">정보</div>
-                </div>
                 
-                <div class="tab-content">
-                    <p>게시물이 여기에 표시됩니다. (PostCard.tsx 적용 필요)</p>
+                <div style="margin-top: 30px; text-align: center; color: #717182; padding: 40px; border-top: 1px solid #eff3f4;">
+                    작성한 게시물이 아래에 표시될 예정입니다.<br>
+                    (PostDAO.getTimeline 메서드 수정 필요)
                 </div>
             </div>
             
         <% } else { %>
-            <div class="pt-6 p-4">
-                <p>사용자 정보가 없습니다. 로그인이 필요합니다.</p>
-                <p><a href="login.jsp" style="color: #1DA1F2; text-decoration: none;">로그인 페이지로 이동</a></p>
+            <div style="padding: 50px; text-align: center;">
+                <h2>사용자를 찾을 수 없습니다.</h2>
+                <p>존재하지 않는 아이디이거나 삭제된 계정입니다.</p>
+                <a href="main.jsp" style="color: #1DA1F2;">홈으로 돌아가기</a>
             </div>
         <% } %>
     </div>
