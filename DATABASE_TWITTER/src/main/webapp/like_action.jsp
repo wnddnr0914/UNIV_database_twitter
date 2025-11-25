@@ -2,53 +2,63 @@
 <%@ page import="DAO.LikeDAO" %>
 <%@ page import="BEAN.post_like" %>
 <% 
-    // ⭐ MVC1 Controller 영역 ⭐ (로직은 그대로 유지)
+    // ⭐ MVC1 Controller 영역 ⭐
     request.setCharacterEncoding("UTF-8"); 
     
-    String action = request.getParameter("action");
-    String postIdStr = request.getParameter("postId");
-    String userId = request.getParameter("userId");
+    // 1. 로그인 체크 (세션 사용)
+    String userId = (String) session.getAttribute("idKey");
+    
+    // 비로그인 상태면 로그인 페이지로
+    if (userId == null) {
+%>
+    <script>
+        alert("로그인이 필요한 서비스입니다.");
+        location.href = "login.jsp";
+    </script>
+<%
+        return;
+    }
+
+    // 2. 파라미터 받기
+    String action = request.getParameter("action");   // "like" or "unlike"
+    String postIdStr = request.getParameter("postId"); // 게시물 ID
     
     boolean success = false;
     String message = "";
     
-    // [보안 임시 조치]: 현재는 세션이 없으므로, ID가 없으면 'testuser'로 가정
-    if (userId == null || userId.isEmpty()) {
-        userId = "testuser";
-    }
-    
-    // 2. 필수 데이터 유효성 검사
-    if (postIdStr != null && userId != null && action != null) {
+    // 3. 유효성 검사 및 DB 처리
+    if (postIdStr != null && action != null) {
         
         try {
             int postId = Integer.parseInt(postIdStr);
             
             LikeDAO likeDAO = new LikeDAO();
             post_like likeBean = new post_like();
+            
+            // BEAN에 데이터 세팅
             likeBean.setPOST_idPOST(postId);
-            likeBean.setUSER_idUSER(userId);
+            likeBean.setUSER_idUSER(userId); // 세션에서 가져온 내 ID
             
             if (action.equals("like")) {
-                // 좋아요 요청 (INSERT)
+                // 좋아요 추가 (INSERT)
                 success = likeDAO.insertLike(likeBean);
-                message = success ? "게시물에 좋아요를 눌렀습니다." : "이미 좋아요를 누른 게시물입니다.";
+                message = success ? "게시물에 좋아요를 눌렀습니다. ❤️" : "이미 좋아요를 누른 게시물입니다.";
                 
             } else if (action.equals("unlike")) {
-                // 좋아요 취소 요청 (DELETE)
+                // 좋아요 취소 (DELETE)
                 success = likeDAO.deleteLike(likeBean);
-                message = success ? "게시물 좋아요를 취소했습니다." : "좋아요 취소에 실패했습니다.";
+                message = success ? "좋아요를 취소했습니다. 💔" : "취소 실패 (시스템 오류)";
             }
             
         } catch (NumberFormatException e) {
-            message = "게시물 ID가 올바르지 않습니다.";
+            message = "잘못된 게시물 ID입니다.";
         }
     } else {
-        message = "필수 정보(게시물ID, 사용자ID)가 누락되었습니다.";
+        message = "필수 정보가 누락되었습니다.";
     }
 
-    // JSP 변수: 메시지에 따라 상태 클래스 결정 (성공/실패)
-    // '눌렀습니다' 또는 '취소했습니다'가 포함되면 성공으로 간주합니다.
-    boolean isSuccess = message.contains("눌렀습니다") || message.contains("취소했습니다");
+    // JSP 변수: 상태 클래스 결정
+    boolean isSuccess = message.contains("했습니다");
     String statusClass = isSuccess ? "status-success" : "status-failure";
 %>
 <!DOCTYPE html>
@@ -57,18 +67,18 @@
     <meta charset="UTF-8">
     <title>좋아요 처리 결과</title>
     <style>
-        /* CSS 변수 (globals.css에서 핵심 디자인 추출) */
+        /* CSS 변수 (globals.css 스타일 유지) */
         :root {
             --background: #ffffff;
             --foreground: oklch(0.145 0 0);
-            --primary: #030213; /* Black */
-            --primary-foreground: oklch(1 0 0); /* White */
-            --destructive: #d4183d; /* Red for errors */
+            --primary: #030213;
+            --primary-foreground: oklch(1 0 0);
+            --destructive: #d4183d;
             --radius: 0.625rem;
             --border: rgba(0, 0, 0, 0.1);
         }
         body {
-            background-color: #f7f9f9; /* Light background */
+            background-color: #f7f9f9;
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
@@ -99,45 +109,46 @@
             border-top: 1px dashed var(--border);
             border-bottom: 1px dashed var(--border);
         }
-        .status-success {
-            color: #d4183d; /* 좋아요 성공은 빨간색으로 (Heart Icon color) */
-            font-weight: bold;
-        }
-        .status-failure {
-            color: var(--destructive); /* 실패 메시지 색상 */
-        }
+        .status-success { color: #d4183d; font-weight: bold; } /* 하트 색상 */
+        .status-failure { color: var(--destructive); font-weight: bold; }
+        
         .link-group a {
             display: block;
             margin-top: 10px;
-            color: #1DA1F2; /* Twitter Blue */
+            color: #1DA1F2;
             text-decoration: none;
             font-weight: 500;
         }
-        .link-group a:hover {
-            text-decoration: underline;
-        }
+        .link-group a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1 class="result-title">좋아요 처리 결과</h1>
+        <h1 class="result-title">좋아요 결과</h1>
         
         <p class="status-message <%= statusClass %>">
             <%= message %>
         </p>
         
         <div class="link-group">
-            <a href="mypage.jsp?id=<%= userId %>">내 마이페이지로 돌아가기</a>
-            <% 
-                // [참고]: 좋아요 기능은 특정 게시물이 있는 페이지로 돌아가는 것이 이상적입니다. 
-                // 현재는 임시로 마이페이지로 이동하도록 했습니다.
-            %>
+            <a href="main.jsp">메인 타임라인으로 돌아가기</a>
+            <a href="mypage.jsp?id=<%= userId %>">내 마이페이지로 가기</a>
         </div>
         
         <% 
-            // 3초 후 리다이렉트 스크립트 
-            response.setHeader("Refresh", "3;url=mypage.jsp?id=" + userId);
+            // 2초 후 자동으로 이전 페이지(보통 메인이나 마이페이지)로 이동하면 좋겠지만,
+            // 상황에 따라 다르므로 일단 메인으로 보냅니다.
+            if(isSuccess) {
         %>
+            <script>
+                setTimeout(function() {
+                    location.href = "main.jsp"; // 2초 후 메인으로 자동 이동
+                }, 2000);
+            </script>
+            <p style="color: #717182; font-size: 0.9rem; margin-top: 15px;">
+                잠시 후 메인으로 이동합니다...
+            </p>
+        <% } %>
     </div>
 </body>
 </html>
