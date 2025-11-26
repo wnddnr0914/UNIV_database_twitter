@@ -4,13 +4,9 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <% 
-    // ⭐ MVC1 Controller 영역 ⭐
-    request.setCharacterEncoding("UTF-8"); 
-    
-    // 1. 로그인 체크 (세션 확인)
+    request.setCharacterEncoding("UTF-8");
+    // 1. 로그인 체크
     String myId = (String) session.getAttribute("idKey");
-    
-    // 로그인이 안 되어 있다면 로그인 페이지로 보냄
     if (myId == null) {
 %>
     <script>
@@ -21,12 +17,21 @@
         return;
     }
 
-    // 2. DAO 호출 (내 아이디와 관련된 모든 메시지 조회)
-    // MessageDAO.getConversationList는 내가 보낸 것 + 내가 받은 것 모두 최신순으로 가져옴
+    // 2. DAO 호출 (페이징 적용)
+    int pageNum = 1;
+    if(request.getParameter("page") != null) {
+        pageNum = Integer.parseInt(request.getParameter("page"));
+    }
+    int limit = 10; // 10개씩 보기
+
     MessageDAO msgDAO = new MessageDAO();
-    List<message> conversation = msgDAO.getConversationList(myId);
+    // [수정] 페이징된 메소드 호출
+    List<message> conversation = msgDAO.getConversationList(myId, pageNum, limit);
     
-    // 날짜 포맷 설정 (예: 2024-11-25 14:30)
+    // 전체 페이지 수 계산
+    int totalCount = msgDAO.getTotalMessageCount(myId);
+    int totalPage = (int) Math.ceil((double) totalCount / limit);
+    
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 %>
 <!DOCTYPE html>
@@ -56,7 +61,6 @@
             margin: 0 auto;
         }
         
-        /* 상단 헤더 및 네비게이션 */
         .header-area {
             display: flex;
             justify-content: space-between;
@@ -68,7 +72,6 @@
         .header-title { font-size: 1.8rem; font-weight: bold; color: var(--primary); margin: 0; }
         .nav-links a { text-decoration: none; color: #1d9bf0; font-weight: bold; margin-left: 15px; }
 
-        /* 메시지 리스트 컨테이너 */
         .message-list-container {
             background-color: var(--background);
             border: 1px solid var(--border);
@@ -78,33 +81,30 @@
             min-height: 400px;
         }
 
-        /* 개별 메시지 박스 스타일 */
         .msg-container { 
-            padding: 12px 16px; 
+            padding: 12px 16px;
             margin-bottom: 12px;
             border-radius: 12px;
-            max-width: 80%; /* 말풍선 느낌 */
+            max-width: 80%; 
             position: relative;
         }
         
-        /* 내가 보낸 메시지 (오른쪽 정렬, 파란색 배경) */
         .msg-mine {
-            background-color: #e1f5fe; /* 연한 파랑 */
-            margin-left: auto; /* 오른쪽 정렬 */
+            background-color: #e1f5fe;
+            margin-left: auto;
             border-bottom-right-radius: 0;
             text-align: right;
         }
         
-        /* 받은 메시지 (왼쪽 정렬, 회색 배경) */
         .msg-other {
-            background-color: #f3f3f5; /* 연한 회색 */
-            margin-right: auto; /* 왼쪽 정렬 */
+            background-color: #f3f3f5;
+            margin-right: auto;
             border-bottom-left-radius: 0;
             text-align: left;
         }
 
         .user-info { 
-            font-size: 0.85rem; 
+            font-size: 0.85rem;
             font-weight: bold; 
             margin-bottom: 6px; 
             display: flex;
@@ -112,20 +112,11 @@
             gap: 5px;
         }
         
-        /* 내가 보낸 메시지의 유저 정보 정렬 */
         .msg-mine .user-info { justify-content: flex-end; color: #0277bd; }
-        /* 받은 메시지의 유저 정보 정렬 */
         .msg-other .user-info { justify-content: flex-start; color: var(--primary); }
 
         .message-content { font-size: 1rem; margin: 0; line-height: 1.5; word-break: break-all; }
-        
-        .timestamp { 
-            font-size: 0.75rem; 
-            color: var(--muted-foreground); 
-            margin-top: 5px; 
-            display: block; 
-        }
-        
+        .timestamp { font-size: 0.75rem; color: var(--muted-foreground); margin-top: 5px; display: block; }
         .empty-box { text-align: center; padding: 50px; color: var(--muted-foreground); }
     </style>
 </head>
@@ -154,13 +145,8 @@
         <% } else { %>
             
             <% for (message msg : conversation) { 
-                // 내가 보낸 메시지인지 확인
                 boolean sentByMe = msg.getSender().equals(myId);
-                
-                // 화면에 표시할 상대방 이름 (내가 보냈으면 받는사람, 내가 받았으면 보낸사람)
                 String otherPerson = sentByMe ? msg.getRecipient() : msg.getSender();
-                
-                // 스타일 클래스 결정
                 String containerClass = sentByMe ? "msg-mine" : "msg-other";
             %>
                 <div class="msg-container <%= containerClass %>">
@@ -182,6 +168,18 @@
     </div>
     
     <div style="text-align: center; margin-top: 20px;">
+        <% if(pageNum > 1) { %>
+            <a href="message_inbox.jsp?page=<%=pageNum-1%>" style="margin-right:10px; font-weight:bold; color:#1d9bf0; text-decoration:none;">이전</a>
+        <% } %>
+        
+        <span style="color:#536471;"> <%=pageNum%> / <%=totalPage%> </span>
+
+        <% if(pageNum < totalPage) { %>
+            <a href="message_inbox.jsp?page=<%=pageNum+1%>" style="margin-left:10px; font-weight:bold; color:#1d9bf0; text-decoration:none;">다음</a>
+        <% } %>
+    </div>
+
+    <div style="text-align: center; margin-top: 10px;">
         <a href="javascript:location.reload();" style="color: var(--muted-foreground); text-decoration: none;">🔄 새로고침</a>
     </div>
 

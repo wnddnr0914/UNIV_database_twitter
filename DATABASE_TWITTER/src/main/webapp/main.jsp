@@ -3,7 +3,6 @@
 <%@ page import="DAO.CommentDAO, BEAN.post_comment, BEAN.reply_comment" %>
 <%
     request.setCharacterEncoding("UTF-8");
-
     // 1. 로그인 체크
     String myId = (String) session.getAttribute("idKey");
     if (myId == null) {
@@ -13,21 +12,33 @@
         return;
     }
 
-    // 2. 탭 설정 (전체 / 팔로잉 / 그룹)
+    // 2. 탭 설정
     String tab = request.getParameter("tab");
     if (tab == null) tab = "ALL";
 
-    // 3. 게시글 리스트 가져오기
+    // 3. 게시글 리스트 가져오기 (페이징 적용)
     PostDAO dao = new PostDAO();
+    
+    // 페이지 번호 받기
+    int pageNum = 1;
+    if(request.getParameter("page") != null) {
+        pageNum = Integer.parseInt(request.getParameter("page"));
+    }
+    int limit = 10; // 한 페이지에 10개씩
+
     ArrayList<post> list = null;
     
     if ("GROUP".equals(tab)) {
-        // ⭐ 그룹 피드: 내가 가입한 그룹의 멤버들 글
-        list = dao.getGroupTimeline(myId);
+        // 그룹 피드 (페이징 적용)
+        list = dao.getGroupTimeline(myId, pageNum, limit);
     } else {
-        // 기존 (전체 or 팔로잉)
-        list = dao.getTimeline(myId, tab);
+        // 전체/팔로잉 피드 (페이징 적용)
+        list = dao.getTimeline(myId, tab, pageNum, limit);
     }
+    
+    // 전체 페이지 수 계산
+    int totalCount = dao.getTotalPostCount(myId, tab);
+    int totalPage = (int) Math.ceil((double) totalCount / limit);
     
     CommentDAO commentDao = new CommentDAO();
 %>
@@ -37,7 +48,6 @@
     <meta charset="UTF-8">
     <title>홈 / 트위터</title>
     <style>
-        /* 기존 스타일 유지 */
         body { background-color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
         a { text-decoration: none; color: inherit; }
         
@@ -52,9 +62,8 @@
         .my-profile-img { width: 40px; height: 40px; background-color: #ccc; border-radius: 50%; }
         .my-name { font-weight: bold; font-size: 15px; }
 
-        .container { width: 600px; margin: 0 auto; border-left: 1px solid #eff3f4; border-right: 1px solid #eff3f4; min-height: 100vh; }
+        .container { width: 600px; margin: 0 auto; border-left: 1px solid #eff3f4; border-right: 1px solid #eff3f4; min-height: 100vh; padding-bottom: 50px; }
 
-        /* 탭 스타일 (3개로 확장) */
         .tabs { display: flex; border-bottom: 1px solid #eff3f4; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); position: sticky; top: 60px; z-index: 900; }
         .tab-item { flex: 1; text-align: center; padding: 15px 0; font-weight: bold; color: #536471; cursor: pointer; transition: 0.2s; position: relative; }
         .tab-item:hover { background-color: #eff3f4; }
@@ -165,17 +174,25 @@
                 int commentCount = commentDao.getCommentCount(p.getIdPOST());
             %>
             <div class="post-item">
-                <div class="my-profile-img"></div>
+                
+                <div class="my-profile-img" 
+                     onclick="location.href='mypage.jsp?id=<%= p.getUser() %>'" 
+                     style="cursor: pointer;"></div>
+                
                 <div class="post-content">
                     <div class="post-header">
-                        <div>
+                        <div onclick="location.href='mypage.jsp?id=<%= p.getUser() %>'" 
+                             style="cursor: pointer; display: flex; align-items: center;">
                             <span class="post-user-name"><%= p.getUserName() %></span>
                             <span class="post-user-id">@<%= p.getUser() %></span>
                             <span class="post-time"> · <%= p.getDate().toString().substring(0, 16) %></span>
                         </div>
+                        
                         <div style="color:#536471">···</div>
                     </div>
+                    
                     <div class="post-text"><%= p.getDetail() %></div>
+                    
                     <div class="post-actions">
                         <button class="action-btn" onclick="toggleComment(<%= p.getIdPOST() %>)">
                             💬 <%= commentCount %>
@@ -234,6 +251,18 @@
             </div>
             <% } %>
         <% } %>
+
+        <div class="pagination" style="text-align:center; padding:20px; margin-top:10px;">
+            <% if(pageNum > 1) { %>
+                <a href="main.jsp?tab=<%=tab%>&page=<%=pageNum-1%>" style="margin:0 10px; font-weight:bold; color:#1d9bf0; text-decoration:none;">이전</a>
+            <% } %>
+            
+            <span style="color:#536471;"> <%=pageNum%> / <%=totalPage%> </span>
+
+            <% if(pageNum < totalPage) { %>
+                <a href="main.jsp?tab=<%=tab%>&page=<%=pageNum+1%>" style="margin:0 10px; font-weight:bold; color:#1d9bf0; text-decoration:none;">다음</a>
+            <% } %>
+        </div>
 
     </div>
 </body>

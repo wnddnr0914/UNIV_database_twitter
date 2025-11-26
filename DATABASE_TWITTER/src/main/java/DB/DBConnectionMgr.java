@@ -13,6 +13,7 @@ public class DBConnectionMgr {
 	private final String JDBC_URL = "jdbc:mysql://localhost:3306/twitter_DB?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8";
 	private final String USER = "root";  // 아이디
 	private final String PASS = "121709";  // 비밀번호 (설치할 때 정한 것)
+	
 
 	// 2. 연결(Connection)을 가져오는 메소드
 	public Connection getConnection() {

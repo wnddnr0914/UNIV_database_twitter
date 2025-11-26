@@ -10,37 +10,31 @@ import java.util.List;
 import BEAN.message; 
 
 public class MessageDAO {
-    // DB 접속 정보 설정 (이전 DAO와 동일)
     private final String driver = "com.mysql.cj.jdbc.Driver";
     private final String url = "jdbc:mysql://localhost:3306/twitter_DB?serverTimezone=UTC&characterEncoding=UTF-8";
     private final String id = "root";
-    private final String pw = "121709"; // 사용자님의 비밀번호로 가정
+    private final String pw = "121709";
 
-    // DB 연결 메서드
     public Connection getConnection() {
         Connection conn = null;
         try {
             Class.forName(driver);
             conn = DriverManager.getConnection(url, id, pw);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return conn;
     }
 
-    // 1. 메시지 전송 (INSERT) - Java에서 생성한 Timestamp 사용
+    // 1. 메시지 전송
     public boolean sendMessage(message msgBean) {
         Connection conn = getConnection();
-        // SQL: DATE 컬럼에도 값을 명시적으로 받음
         String sql = "INSERT INTO MESSAGE (idMESSAGE, Sender, Recipient, TEXT, DATE) VALUES (?, ?, ?, ?, ?)"; 
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            // 임시 ID 생성 (충돌 방지를 위해 Math.random() 추가)
             pstmt.setInt(1, (int) (System.currentTimeMillis() % 100000) + (int)(Math.random() * 100)); 
             pstmt.setString(2, msgBean.getSender());
             pstmt.setString(3, msgBean.getRecipient());
             pstmt.setString(4, msgBean.getTEXT());
-            pstmt.setTimestamp(5, msgBean.getDATE()); // Java Timestamp 객체를 전달
+            pstmt.setTimestamp(5, msgBean.getDATE());
             
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected == 1;
@@ -50,17 +44,21 @@ public class MessageDAO {
         }
     }
     
-    // 2. 대화 목록 조회 (SELECT - 송신/수신 모두 포함)
-    public List<message> getConversationList(String userId) {
+    // 2. 대화 목록 조회 (페이징 적용: page, limit 추가)
+    public List<message> getConversationList(String userId, int page, int limit) {
         List<message> conversation = new ArrayList<>();
         Connection conn = getConnection();
+        int start = (page - 1) * limit;
         
-        // 쿼리: Sender가 나이거나 Recipient가 나인 모든 대화를 최신순으로 조회 (참고 코드 반영)
-        String sql = "SELECT idMESSAGE, Sender, Recipient, TEXT, DATE FROM MESSAGE WHERE Sender = ? OR Recipient = ? ORDER BY DATE DESC";
+        String sql = "SELECT idMESSAGE, Sender, Recipient, TEXT, DATE FROM MESSAGE "
+                   + "WHERE Sender = ? OR Recipient = ? "
+                   + "ORDER BY DATE DESC LIMIT ?, ?";
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, userId);
             pstmt.setString(2, userId); 
+            pstmt.setInt(3, start);
+            pstmt.setInt(4, limit);
             
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -77,5 +75,21 @@ public class MessageDAO {
             System.err.println("★ 대화 목록 조회 DB 오류: " + e.getMessage());
         }
         return conversation;
+    }
+
+    // [추가] 전체 쪽지 개수 (페이징 계산용)
+    public int getTotalMessageCount(String userId) {
+        Connection conn = getConnection();
+        int count = 0;
+        String sql = "SELECT COUNT(*) FROM MESSAGE WHERE Sender = ? OR Recipient = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            pstmt.setString(2, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if(rs.next()) count = rs.getInt(1);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return count;
     }
 }

@@ -112,9 +112,13 @@
         .pagination span { color: #536471; }
     </style>
     
-    <script>
+   <script>
         function toggleFollow(targetId, btn) {
-            location.href = "follow_proc.jsp?targetId=" + targetId + "&keyword=<%=keyword%>&page=<%=pageNum%>";
+            // 이벤트 전파 막기 (버튼 눌렀는데 프로필 클릭된 것처럼 인식되는 것 방지)
+            if(event) event.stopPropagation();
+            
+            // from=search 파라미터 추가!
+            location.href = "follow_proc.jsp?targetId=" + targetId + "&from=search&keyword=<%=keyword%>&page=<%=pageNum%>";
         }
     </script>
 </head>
@@ -131,12 +135,8 @@
                 <a href="search.jsp" class="nav-item active">
                     <span>🔍</span> 검색
                 </a>
-                <a href="#" class="nav-item" onclick="alert('준비중입니다!')">
-                    <span>💬</span> 쪽지
-                </a>
-                <a href="#" class="nav-item" onclick="alert('준비중입니다!')">
-                    <span>👥</span> 그룹
-                </a>
+                <a href="message_inbox.jsp" class="nav-item"><span>💬</span> 쪽지</a>
+                  <a href="group.jsp" class="nav-item"><span>👥</span> 그룹</a>
             </div>
         </div>
 
@@ -162,12 +162,17 @@
                 </div>
             <% } else { %>
                 <% for(user u : list) { %>
-                <div class="user-item">
-                    <div class="profile-img" style="background-image: url('default_profile.png'); background-size: cover;"></div>
-                    <div class="user-info">
-                        <div class="user-name"><%= u.getNAME() %></div>
-                        <div class="user-id">@<%= u.getIdUSER() %></div>
-                    </div>
+               <div class="user-item">
+    <div class="profile-img" 
+         style="background-image: url('default_profile.png'); background-size: cover; cursor: pointer;"
+         onclick="location.href='mypage.jsp?id=<%= u.getIdUSER() %>'"></div>
+    
+    <div class="user-info" 
+         onclick="location.href='mypage.jsp?id=<%= u.getIdUSER() %>'" 
+         style="cursor: pointer;">
+        <div class="user-name"><%= u.getNAME() %></div>
+        <div class="user-id">@<%= u.getIdUSER() %></div>
+    </div>
                     <div>
                         <% if(u.isFollowed()) { %>
                             <button class="btn-follow btn-following" onclick="toggleFollow('<%=u.getIdUSER()%>', this)">팔로잉</button>

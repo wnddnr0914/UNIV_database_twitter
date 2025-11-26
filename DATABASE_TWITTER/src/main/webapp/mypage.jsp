@@ -110,6 +110,20 @@
         font-weight: bold;
         cursor: pointer;
     }
+    .btn-logout {
+        background-color: white;
+        color: #f4212e; /* 경고용 빨간색 */
+        border: 1px solid #fcfcfc;
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-left: 8px; /* 버튼 사이 간격 */
+    }
+    .btn-logout:hover {
+        background-color: #ffFOFO; /* 연한 빨강 배경 */
+        border-color: #f4212e;
+    }
     
     .user-info-section { padding: 0 16px 20px 16px; }
     .user-name { font-size: 1.5rem; font-weight: bold; margin-top: 10px; margin-bottom: 4px; }
@@ -182,9 +196,14 @@
                 <div class="profile-photo"></div>
                 
                 <% if(userId.equals(myId)) { %>
-                    <button class="edit-button" onclick="alert('프로필 수정 기능은 준비중입니다.')">
-                        프로필 수정
-                    </button>
+                    <div>
+                        <button class="edit-button" onclick="location.href='profile_edit.jsp'">
+                            프로필 수정
+                        </button>
+                        <button class="btn-logout" onclick="if(confirm('정말 로그아웃 하시겠습니까?')) location.href='logout_action.jsp'">
+                            로그아웃
+                        </button>
+                    </div>
                 <% } else { %>
                     <button class="edit-button" onclick="toggleFollow('<%= userId %>')">
                         팔로우 / 언팔로우
@@ -209,13 +228,14 @@
                         <div class="stat-value"><%= postsCount %></div>
                         <div class="stat-label">게시물</div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value"><%= followersCount %></div>
-                        <div class="stat-label">팔로워</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value"><%= followingCount %></div>
-                        <div class="stat-label">팔로잉</div>
+                    <div class="stat-item" style="cursor: pointer;" onclick="location.href='follow_list.jsp?id=<%= userId %>&mode=FOLLOWER'">
+        <div class="stat-value"><%= followersCount %></div>
+        <div class="stat-label">팔로워</div>
+    </div>
+    <div class="stat-item" style="cursor: pointer;" onclick="location.href='follow_list.jsp?id=<%= userId %>&mode=FOLLOWING'">
+        <div class="stat-value"><%= followingCount %></div>
+        <div class="stat-label">팔로잉</div>
+    </div>
                     </div>
                 </div>
                 

@@ -1,7 +1,21 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="DAO.GroupDAO, BEAN.group, java.util.ArrayList" %>
+
 <%
     String myId = (String) session.getAttribute("idKey");
+    if (myId == null) {
+%>
+    <script>
+        alert("로그인이 필요한 서비스입니다. 로그인 해주세요! 🔒");
+        location.href = "login.jsp";
+    </script>
+<%
+        return; 
+    }
+%>
+
+
+<%
     if (myId == null) { response.sendRedirect("login.jsp"); return; }
     
     GroupDAO dao = new GroupDAO();

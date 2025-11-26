@@ -160,9 +160,7 @@ body {
                 <p class="error-msg">⚠️ <%= errorMsg %></p>
             <% } %>
 
-            <div style="margin-top: 16px; text-align: center; font-size: 0.875rem;">
-                <a href="#" style="color: #1d9bf0; text-decoration: none;">비밀번호를 잊으셨나요?</a>
-            </div>
+         
         </div>
     </div>
 </body>

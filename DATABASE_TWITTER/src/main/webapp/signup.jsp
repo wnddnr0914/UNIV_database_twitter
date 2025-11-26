@@ -1,65 +1,50 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="DAO.UserDAO" %>
-<%@ page import="BEAN.user" %>
-<%@ page import="java.sql.Date" %>
-<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="DAO.UserDAO, BEAN.user, java.sql.Date, java.text.SimpleDateFormat" %>
 <%
-    // 1. 한글 깨짐 방지
     request.setCharacterEncoding("UTF-8");
-
     String resultMsg = "";
-    String userId = request.getParameter("userId");
     
-    // 2. POST 요청 처리 (가입하기 버튼 클릭 시)
+    // POST 요청 처리 (가입하기 버튼 클릭 시)
     if (request.getMethod().equalsIgnoreCase("POST")) {
+        String userId = request.getParameter("userId");
         String userName = request.getParameter("userName");
         String userPw = request.getParameter("userPw");
         String birthStr = request.getParameter("birth");
         String genderStr = request.getParameter("gender");
-        
-        // 필수 값 검증
-        if (userId != null && !userId.isEmpty() && 
-            userPw != null && !userPw.isEmpty() && 
-            birthStr != null && !birthStr.isEmpty()) {
-            
+
+        if (userId != null && !userId.isEmpty() && userPw != null && !userPw.isEmpty()) {
             UserDAO dao = new UserDAO();
-            user newUser = new user();
             
-            try {
-                // 데이터 세팅
-                newUser.setIdUSER(userId);
-                newUser.setNAME(userName);
-                newUser.setPASSWORD(userPw);
-                newUser.setGENDER(Integer.parseInt(genderStr));
-                
-                // 날짜 변환 (String yyyy-MM-dd -> java.sql.Date)
-                java.util.Date utilDate = new SimpleDateFormat("yyyy-MM-dd").parse(birthStr);
-                newUser.setBIRTH(new Date(utilDate.getTime()));
-                
-                // ⭐ DB에 실제 저장 (UserDAO.insertUser 호출)
-                boolean success = dao.insertUser(newUser);
-                
-                if (success) {
-                    // 성공 시 자바스크립트로 알림 후 이동
+            // [중요] 서버단에서도 한 번 더 중복 검사 (보안 강화)
+            if(!dao.checkId(userId)) {
+                resultMsg = "이미 사용 중인 아이디입니다.";
+            } else {
+                try {
+                    user newUser = new user();
+                    newUser.setIdUSER(userId);
+                    newUser.setNAME(userName);
+                    newUser.setPASSWORD(userPw);
+                    newUser.setGENDER(Integer.parseInt(genderStr));
+                    
+                    java.util.Date utilDate = new SimpleDateFormat("yyyy-MM-dd").parse(birthStr);
+                    newUser.setBIRTH(new Date(utilDate.getTime()));
+                    
+                    if (dao.insertUser(newUser)) {
 %>
-                    <script>
-                        alert("회원가입이 성공적으로 완료되었습니다! 🎉\n로그인 페이지로 이동합니다.");
-                        location.href = "login.jsp";
-                    </script>
+                        <script>
+                            alert("회원가입 완료! 🎉\n로그인 페이지로 이동합니다.");
+                            location.href = "login.jsp";
+                        </script>
 <%
-                    return; // 더 이상 HTML을 렌더링하지 않고 종료
-                } else {
-                    resultMsg = "이미 사용 중인 아이디입니다. 다른 아이디를 사용해주세요.";
+                        return;
+                    } else {
+                        resultMsg = "회원가입 실패 (DB 오류)";
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    resultMsg = "입력 정보를 확인해주세요 (생년월일 형식 등)";
                 }
-                
-            } catch (java.text.ParseException e) {
-                resultMsg = "생년월일 형식이 올바르지 않습니다. (예: 1999-01-01)";
-            } catch (Exception e) {
-                e.printStackTrace();
-                resultMsg = "회원가입 처리 중 오류가 발생했습니다.";
             }
-        } else {
-            resultMsg = "모든 정보를 입력해주세요.";
         }
     }
 %>
@@ -69,104 +54,84 @@
 <meta charset="UTF-8">
 <title>X 가입하기</title>
 <style>
-/* CSS 변수 (globals.css 스타일 유지) */
-:root {
-    --background: #ffffff;
-    --foreground: oklch(0.145 0 0);
-    --primary: #030213;
-    --primary-foreground: oklch(1 0 0);
-    --border: rgba(0, 0, 0, 0.1);
-    --radius: 0.625rem;
-    --input: #f3f3f5;
-    --muted-foreground: #717182;
-}
-
-body {
-    background-color: var(--background);
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-}
-.card {
-    background: var(--background);
-    border-radius: var(--radius);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-}
-.card-header {
-    text-align: center;
-    padding: 24px;
-    border-bottom: 1px solid var(--border);
-}
-.card-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-.logo-icon {
-    font-size: 2rem;
-    color: #1d9bf0;
-    margin-bottom: 1rem;
-}
-
-.tabs-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    background-color: var(--border);
-    border-radius: 9999px;
-    padding: 4px;
-    margin-bottom: 16px;
-}
-.tabs-trigger {
-    padding: 8px 12px;
-    font-weight: 500;
-    border-radius: 9999px;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    color: var(--foreground);
-    transition: background-color 0.2s;
-}
-.tabs-trigger.active {
-    background-color: var(--background);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
+/* CSS 변수 유지 */
+:root { --background: #ffffff; --foreground: oklch(0.145 0 0); --primary: #030213; --primary-foreground: oklch(1 0 0); --border: rgba(0, 0, 0, 0.1); --radius: 0.625rem; --input: #f3f3f5; }
+body { background-color: var(--background); font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.card { background: var(--background); border-radius: var(--radius); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 100%; max-width: 400px; }
+.card-header { text-align: center; padding: 24px; border-bottom: 1px solid var(--border); }
+.card-title { font-size: 1.5rem; font-weight: bold; }
+.logo-icon { font-size: 2rem; color: #1d9bf0; margin-bottom: 1rem; }
+.tabs-list { display: grid; grid-template-columns: repeat(2, 1fr); background-color: var(--border); border-radius: 9999px; padding: 4px; margin-bottom: 16px; }
+.tabs-trigger { padding: 8px 12px; font-weight: 500; border-radius: 9999px; cursor: pointer; text-align: center; text-decoration: none; color: var(--foreground); transition: background-color 0.2s; }
+.tabs-trigger.active { background-color: var(--background); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
 .card-content { padding: 24px; }
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; margin-bottom: 4px; font-size: 0.875rem; font-weight: 500; }
-.input-field {
-    width: 100%; padding: 10px;
-    background-color: var(--input);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-sizing: border-box;
-    margin-top: 4px;
-    font-size: 1rem;
-}
-.button-submit {
-    width: 100%; padding: 12px; margin-top: 15px;
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    border: none;
-    border-radius: 30px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: bold;
-    transition: opacity 0.2s;
-}
-.button-submit:hover { opacity: 0.9; }
-.error-msg {
-    color: #d4183d;
-    font-size: 0.875rem;
-    margin-top: 15px;
-    font-weight: bold;
-    text-align: center;
-}
+.input-field { width: 100%; padding: 10px; background-color: var(--input); border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; margin-top: 4px; font-size: 1rem; }
+
+/* ▼▼▼ AJAX 버튼 스타일 추가 ▼▼▼ */
+.id-check-group { display: flex; gap: 8px; }
+.btn-check { padding: 0 15px; background-color: #0f1419; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; white-space: nowrap; }
+.btn-check:hover { background-color: #272c30; }
+.check-msg { font-size: 12px; margin-top: 4px; display: block; }
+
+.button-submit { width: 100%; padding: 12px; margin-top: 15px; background-color: var(--primary); color: var(--primary-foreground); border: none; border-radius: 30px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+.button-submit:disabled { opacity: 0.5; cursor: not-allowed; } /* 비활성화 스타일 */
+.error-msg { color: #d4183d; font-size: 0.875rem; margin-top: 15px; font-weight: bold; text-align: center; }
 </style>
+
+<script>
+    // AJAX 아이디 중복 확인 함수
+    function checkId() {
+        const userId = document.getElementById('signup-id').value;
+        const msgSpan = document.getElementById('id-msg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if(userId.trim() === "") {
+            alert("아이디를 입력해주세요!");
+            return;
+        }
+
+        // AJAX 요청 시작 (XMLHttpRequest 사용 - 순수 자바스크립트)
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", "check_id_proc.jsp?userId=" + encodeURIComponent(userId), true);
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                const response = xhr.responseText.trim(); // YES or NO
+                
+                if (response === "YES") {
+                    msgSpan.style.color = "green";
+                    msgSpan.innerText = "✅ 사용 가능한 아이디입니다.";
+                    submitBtn.disabled = false; // 가입 버튼 활성화
+                    document.getElementById('idChecked').value = "Y"; // 체크 완료 표시
+                } else {
+                    msgSpan.style.color = "red";
+                    msgSpan.innerText = "❌ 이미 사용 중인 아이디입니다.";
+                    submitBtn.disabled = true; // 가입 버튼 비활성화
+                    document.getElementById('idChecked').value = "N";
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    // 아이디 수정하면 다시 체크하도록 초기화
+    function resetCheck() {
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('idChecked').value = "N";
+        document.getElementById('id-msg').innerText = "";
+    }
+    
+    // 폼 제출 전 최종 확인
+    function validateForm() {
+        if(document.getElementById('idChecked').value !== "Y") {
+            alert("아이디 중복 확인을 해주세요!");
+            return false;
+        }
+        return true;
+    }
+</script>
 </head>
 <body>
     <div class="card">
@@ -181,12 +146,17 @@ body {
                 <div class="tabs-trigger active">회원가입</div>
             </div>
 
-            <form method="POST" action="signup.jsp">
+            <form method="POST" action="signup.jsp" onsubmit="return validateForm()">
+                <input type="hidden" id="idChecked" value="N">
                 
                 <div class="form-group">
                     <label for="signup-id">아이디</label>
-                    <input id="signup-id" type="text" name="userId" placeholder="영문, 숫자" value="<%= userId != null ? userId : "" %>" required class="input-field">
-                </div>
+                    <div class="id-check-group">
+                        <input id="signup-id" type="text" name="userId" placeholder="영문, 숫자" 
+                               required class="input-field" oninput="resetCheck()">
+                        <button type="button" class="btn-check" onclick="checkId()">중복확인</button>
+                    </div>
+                    <span id="id-msg" class="check-msg"></span> </div>
                 
                 <div class="form-group">
                     <label for="signup-name">이름</label>
@@ -211,7 +181,7 @@ body {
                     </select>
                 </div>
                 
-                <button type="submit" class="button-submit">가입하기</button>
+                <button type="submit" id="submitBtn" class="button-submit" disabled>가입하기</button>
             </form>
             
             <% if (!resultMsg.isEmpty()) { %>

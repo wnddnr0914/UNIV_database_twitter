@@ -6,7 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import BEAN.follow; // ⭐ BEAN 패키지의 소문자 파일명 follow를 import
-
+import java.util.ArrayList;
+import BEAN.user; // 팔로워/팔로잉 목록은 user 객체로 담아야 함
 public class FollowDAO {
     // 1. DB 접속 정보 설정 (UserDAO와 동일하게 유지)
     private final String driver = "com.mysql.cj.jdbc.Driver";
@@ -103,5 +104,62 @@ public class FollowDAO {
             e.printStackTrace();
         }
         return count;
+    }
+ // 7. 팔로잉/팔로워 리스트 가져오기 (핵심 기능)
+    // mode: "FOLLOWER" (나를 따르는 사람 목록) / "FOLLOWING" (내가 따르는 사람 목록)
+    public ArrayList<user> getFollowList(String targetId, String myId, String mode) {
+        ArrayList<user> list = new ArrayList<>();
+        Connection conn = getConnection(); // 기존 수동 연결 메서드 사용
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            String sql = "";
+
+            if ("FOLLOWER".equals(mode)) {
+                // targetId를 팔로우하는 사람들 목록 (Follower List)
+                // 논리: FOLLOWER 컬럼이 targetId인 행들의 FOLLOWING(한 사람) 정보를 가져옴
+                // + '내(myId)'가 그 사람을 팔로우 중인지 확인 (IS_FOLLOWED)
+                sql = "SELECT u.*, "
+                    + "(SELECT COUNT(*) FROM FOLLOW f2 WHERE f2.FOLLOWING = ? AND f2.FOLLOWER = u.idUSER) AS IS_FOLLOWED "
+                    + "FROM USER u JOIN FOLLOW f ON u.idUSER = f.FOLLOWING "
+                    + "WHERE f.FOLLOWER = ?";
+            } else {
+                // targetId가 팔로우하는 사람들 목록 (Following List)
+                // 논리: FOLLOWING 컬럼이 targetId인 행들의 FOLLOWER(당한 사람) 정보를 가져옴
+                sql = "SELECT u.*, "
+                    + "(SELECT COUNT(*) FROM FOLLOW f2 WHERE f2.FOLLOWING = ? AND f2.FOLLOWER = u.idUSER) AS IS_FOLLOWED "
+                    + "FROM USER u JOIN FOLLOW f ON u.idUSER = f.FOLLOWER "
+                    + "WHERE f.FOLLOWING = ?";
+            }
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, myId);     // 서브쿼리용: 내가 이 사람을 팔로우했는지 확인 (1=true)
+            pstmt.setString(2, targetId); // 메인쿼리용: 리스트의 주인
+            
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                user bean = new user();
+                bean.setIdUSER(rs.getString("idUSER"));
+                bean.setNAME(rs.getString("NAME"));
+                bean.setGENDER(rs.getInt("GENDER"));
+                bean.setBIRTH(rs.getDate("BIRTH"));
+                
+                // 검색 화면과 동일하게 팔로우 상태 저장
+                bean.setFollowed(rs.getInt("IS_FOLLOWED") > 0);
+                
+                list.add(bean);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("★ 팔로우 리스트 조회 실패!");
+        } finally {
+            // 수동 연결이므로 꼼꼼하게 닫기
+            try { if(rs != null) rs.close(); } catch(Exception e) {}
+            try { if(pstmt != null) pstmt.close(); } catch(Exception e) {}
+            try { if(conn != null) conn.close(); } catch(Exception e) {}
+        }
+        return list;
     }
 }
