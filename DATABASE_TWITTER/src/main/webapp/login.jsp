@@ -1,33 +1,46 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="DAO.UserDAO" %>
-<%@ page import="BEAN.user" %> <%
-request.setCharacterEncoding("UTF-8");
+<%@ page import="BEAN.user" %>
+<%
+    request.setCharacterEncoding("UTF-8");
 
-    // [Controller 역할]: 로그인 요청 처리
+    // 0. 이미 로그인된 상태라면 메인으로 튕겨내기 (세션 확인)
+    String currentId = (String) session.getAttribute("idKey");
+    if (currentId != null) {
+        response.sendRedirect("main.jsp");
+        return;
+    }
+
     String errorMsg = "";
     
+    // 1. POST 요청 처리 (로그인 버튼 클릭 시)
     if (request.getMethod().equalsIgnoreCase("POST")) {
-        // 폼에서 전송된 ID와 PW를 받음
         String userId = request.getParameter("userId");
         String userPw = request.getParameter("userPw");
         
         if (userId != null && userPw != null) {
             UserDAO dao = new UserDAO();
             
-            // ⭐ 수정: UserVO -> user
+            // ⭐ DB 연동: 실제 MySQL에서 아이디/비번 확인
             user member = dao.loginCheck(userId, userPw); 
             
             if (member != null) {
-                // 1. 로그인 성공 시: 세션에 사용자 정보 저장 (실제 구현 시 필요)
-                // session.setAttribute("loggedInUser", member); 
+                // ---------------------------------------------------------
+                // ⭐ [핵심] 세션 생성 (가장 중요한 부분)
+                // 이제 'elon_musk' 같은 가짜 데이터 대신, 로그인한 진짜 ID가 저장됩니다.
+                // ---------------------------------------------------------
+                session.setAttribute("idKey", member.getIdUSER());
+                session.setAttribute("nameKey", member.getNAME()); // 이름도 저장해두면 편함
                 
-                // 2. 로그인 성공 시: 마이페이지로 리다이렉트 (임시)
-                // ⭐ 수정: member.getIdUser() -> member.getIdUSER()
-                response.sendRedirect("mypage.jsp?id=" + member.getIdUSER());
-                return; // 리다이렉트 후 페이지 실행 중지
+                // 세션 유지 시간 설정 (예: 60분)
+                session.setMaxInactiveInterval(60 * 60); 
+                
+                // 로그인 성공 시 홈(타임라인)으로 이동
+                response.sendRedirect("main.jsp");
+                return; 
             } else {
-                // 로그인 실패 시
-                errorMsg = "ID 또는 비밀번호가 올바르지 않습니다.";
+                // 로그인 실패
+                errorMsg = "아이디 또는 비밀번호가 일치하지 않습니다.";
             }
         }
     }
@@ -38,7 +51,7 @@ request.setCharacterEncoding("UTF-8");
 <meta charset="UTF-8">
 <title>X 가입하기 및 로그인</title>
 <style>
-/* CSS 변수 (globals.css에서 핵심 디자인 추출) */
+/* CSS 변수 (globals.css 스타일 유지) */
 :root {
     --background: #ffffff;
     --foreground: oklch(0.145 0 0);
@@ -50,7 +63,6 @@ request.setCharacterEncoding("UTF-8");
     --muted-foreground: #717182;
 }
 
-/* 기본 스타일 */
 body {
     background-color: var(--background);
     font-family: Arial, sans-serif;
@@ -67,25 +79,15 @@ body {
     width: 100%;
     max-width: 400px;
 }
-.card-header {
-    text-align: center;
-    padding: 24px;
-    border-bottom: 1px solid var(--border);
-}
-.card-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-.logo-icon {
-    font-size: 2rem;
-    color: #1DA1F2; /* Twitter Blue */
-    margin-bottom: 1rem;
-}
+.card-header { text-align: center; padding: 24px; border-bottom: 1px solid var(--border); }
+.card-title { font-size: 1.5rem; font-weight: bold; }
+.logo-icon { font-size: 2rem; color: #1d9bf0; margin-bottom: 1rem; }
+
 .tabs-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     background-color: var(--border);
-    border-radius: 9999px; /* full rounded */
+    border-radius: 9999px;
     padding: 4px;
     margin-bottom: 16px;
 }
@@ -94,23 +96,16 @@ body {
     font-weight: 500;
     border-radius: 9999px;
     cursor: pointer;
-    transition: background-color 0.2s;
     text-align: center;
     text-decoration: none;
     color: var(--foreground);
+    transition: background-color 0.2s;
 }
-.tabs-trigger.active {
-    background-color: var(--background);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
+.tabs-trigger.active { background-color: var(--background); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
 
-/* 폼 요소 스타일 */
-.form-group {
-    margin-bottom: 16px;
-}
+.form-group { margin-bottom: 16px; }
 .input-field {
-    width: 100%;
-    padding: 10px;
+    width: 100%; padding: 10px;
     background-color: var(--input);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -118,9 +113,7 @@ body {
     margin-top: 4px;
 }
 .button-submit {
-    width: 100%;
-    padding: 12px;
-    margin-top: 15px;
+    width: 100%; padding: 12px; margin-top: 15px;
     background-color: var(--primary);
     color: var(--primary-foreground);
     border: none;
@@ -128,32 +121,27 @@ body {
     font-size: 1rem;
     cursor: pointer;
     transition: opacity 0.2s;
+    font-weight: bold;
 }
-.button-submit:hover {
-    opacity: 0.9;
-}
-.error-msg {
-    color: red;
-    font-size: 0.875rem;
-    margin-top: 8px;
-}
+.button-submit:hover { opacity: 0.9; }
+.error-msg { color: #d4183d; font-size: 0.875rem; margin-top: 8px; text-align: center; font-weight: bold; }
 </style>
 </head>
 <body>
     <div class="card">
         <div class="card-header">
-            <div class="logo-icon">X</div>
+            <div class="logo-icon">🐦</div>
             <div class="card-title">소셜 미디어에 오신 것을 환영합니다</div>
-            <p class="text-gray-500">로그인하거나 새 계정을 만드세요</p>
+            <p style="color:var(--muted-foreground); font-size:0.9rem; margin-top:5px;">로그인하거나 새 계정을 만드세요</p>
         </div>
         
-        <div class="card-content p-6">
+        <div style="padding: 24px;">
             <div class="tabs-list">
                 <div class="tabs-trigger active">로그인</div>
                 <a href="signup.jsp" class="tabs-trigger">회원가입</a>
             </div>
 
-            <form method="POST" action="login.jsp" class="space-y-4">
+            <form method="POST" action="login.jsp">
                 
                 <div class="form-group">
                     <label for="login-email">아이디</label>
@@ -169,11 +157,11 @@ body {
             </form>
             
             <% if (!errorMsg.isEmpty()) { %>
-                <p class="error-msg"><%= errorMsg %></p>
+                <p class="error-msg">⚠️ <%= errorMsg %></p>
             <% } %>
 
-            <div class="mt-4 text-center text-sm">
-                <a href="#" style="color: #1DA1F2; text-decoration: none;">비밀번호를 잊으셨나요?</a>
+            <div style="margin-top: 16px; text-align: center; font-size: 0.875rem;">
+                <a href="#" style="color: #1d9bf0; text-decoration: none;">비밀번호를 잊으셨나요?</a>
             </div>
         </div>
     </div>
