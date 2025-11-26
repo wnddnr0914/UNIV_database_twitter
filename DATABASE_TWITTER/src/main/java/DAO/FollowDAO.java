@@ -3,6 +3,7 @@ package DAO;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import BEAN.follow; // ⭐ BEAN 패키지의 소문자 파일명 follow를 import
 
