@@ -11,7 +11,7 @@ public class LikeDAO {
     private final String driver = "com.mysql.cj.jdbc.Driver";
     private final String url = "jdbc:mysql://localhost:3306/twitter_DB?serverTimezone=UTC&characterEncoding=UTF-8";
     private final String id = "root";
-    private final String pw = "L22kjun0!@"; // 사용자님의 비밀번호로 가정
+    private final String pw = "121709"; // 사용자님의 비밀번호로 가정
     
     // 2. DB 연결 메서드
     public Connection getConnection() {

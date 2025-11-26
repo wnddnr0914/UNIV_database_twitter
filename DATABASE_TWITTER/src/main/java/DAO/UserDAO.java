@@ -15,7 +15,7 @@ public class UserDAO {
     private final String driver = "com.mysql.cj.jdbc.Driver"; 
     private final String url = "jdbc:mysql://localhost:3306/twitter_DB?serverTimezone=UTC&characterEncoding=UTF-8"; 
     private final String id = "root"; 
-    private final String pw = "L22kjun0!@"; 
+    private final String pw = "121709"; 
 
     // ⭐ 2. DB 연결을 담당하는 메서드 (수동 유지)
     public Connection getConnection() {

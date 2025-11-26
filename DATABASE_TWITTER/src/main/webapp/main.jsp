@@ -8,7 +8,7 @@
 
 <%
     // 1. 로그인 체크
-    session.setAttribute("idKey", "elon_musk");
+   // session.setAttribute("idKey", "elon_musk");
     String myId = (String) session.getAttribute("idKey"); 
     if (myId == null) {
 %>
