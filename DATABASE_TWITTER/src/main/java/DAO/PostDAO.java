@@ -27,28 +27,28 @@ public class PostDAO {
         finally { if(pool != null) pool.freeConnection(con, pstmt); }
     }
 
-    // 2. 타임라인 목록 가져오기 (페이징 적용: page, limit 추가)
+    // 2. 타임라인 목록 가져오기 (수정됨: 팔로잉 로직 변경)
     public ArrayList<post> getTimeline(String myId, String mode, int page, int limit) {
         ArrayList<post> list = new ArrayList<>();
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        
-        int start = (page - 1) * limit; // 시작 위치 계산
+        int start = (page - 1) * limit;
 
         try {
             con = pool.getConnection();
             
-            String sql = "SELECT p.*, u.NAME, "
+            String sql = "SELECT p.*, u.NAME, u.GENDER, "
                        + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST) AS like_cnt, "
                        + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST AND pl.USER_idUSER = ?) AS my_like "
                        + "FROM POST p JOIN USER u ON p.USER_idUSER = u.idUSER ";
 
             if ("FOLLOW".equals(mode)) {
-                sql += "WHERE p.USER_idUSER IN (SELECT FOLLOWING FROM FOLLOW WHERE FOLLOWER = ?) ";
+                // ▼▼▼ [수정] 내가(FOLLOWING) 팔로우한 사람(FOLLOWER)의 글 조회 ▼▼▼
+                sql += "WHERE p.USER_idUSER IN (SELECT FOLLOWER FROM FOLLOW WHERE FOLLOWING = ?) ";
             }
             
-            sql += "ORDER BY p.idPOST DESC LIMIT ?, ?"; // 페이징 쿼리 추가
+            sql += "ORDER BY p.idPOST DESC LIMIT ?, ?";
 
             pstmt = con.prepareStatement(sql);
             
@@ -56,7 +56,7 @@ public class PostDAO {
             pstmt.setString(idx++, myId); // 좋아요 확인용
             
             if ("FOLLOW".equals(mode)) {
-                pstmt.setString(idx++, myId); // 팔로우 필터링용
+                pstmt.setString(idx++, myId); // 팔로우 필터링용 (내 아이디 = FOLLOWING)
             }
             
             pstmt.setInt(idx++, start);
@@ -68,6 +68,7 @@ public class PostDAO {
                 bean.setIdPOST(rs.getInt("idPOST"));
                 bean.setUser(rs.getString("USER_idUSER"));
                 bean.setUserName(rs.getString("NAME"));
+                bean.setAuthorGender(rs.getInt("GENDER"));
                 bean.setDetail(rs.getString("detail"));
                 bean.setDate(rs.getTimestamp("DATE"));
                 bean.setLikeCount(rs.getInt("like_cnt"));
@@ -79,7 +80,7 @@ public class PostDAO {
         return list;
     }
 
-    // 3. 그룹 타임라인 가져오기 (페이징 적용)
+    // 3. 그룹 타임라인 (기존 동일)
     public ArrayList<post> getGroupTimeline(String myId, int page, int limit) {
         ArrayList<post> list = new ArrayList<>();
         Connection con = null;
@@ -90,7 +91,7 @@ public class PostDAO {
         try {
             con = pool.getConnection();
             
-            String sql = "SELECT p.*, u.NAME, "
+            String sql = "SELECT p.*, u.NAME, u.GENDER, "
                        + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST) AS like_cnt, "
                        + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST AND pl.USER_idUSER = ?) AS my_like "
                        + "FROM POST p "
@@ -115,6 +116,7 @@ public class PostDAO {
                 bean.setIdPOST(rs.getInt("idPOST"));
                 bean.setUser(rs.getString("USER_idUSER"));
                 bean.setUserName(rs.getString("NAME"));
+                bean.setAuthorGender(rs.getInt("GENDER"));
                 bean.setDetail(rs.getString("detail"));
                 bean.setDate(rs.getTimestamp("DATE"));
                 bean.setLikeCount(rs.getInt("like_cnt"));
@@ -126,7 +128,7 @@ public class PostDAO {
         return list;
     }
 
-    // 4. 좋아요 토글
+    // 4. 좋아요 토글 (기존 동일)
     public void toggleLike(String userId, int postId) {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -158,7 +160,7 @@ public class PostDAO {
         finally { if(pool != null) pool.freeConnection(con, pstmt, rs); }
     }
 
-    // 5. 특정 유저 게시글 (마이페이지용 - 페이징 미적용 상태 유지)
+    // 5. 특정 유저 게시글 (기존 동일)
     public ArrayList<post> getUserPosts(String targetId, String myId) {
         ArrayList<post> list = new ArrayList<>();
         Connection con = null;
@@ -166,7 +168,7 @@ public class PostDAO {
         ResultSet rs = null;
         try {
             con = pool.getConnection();
-            String sql = "SELECT p.*, u.NAME, "
+            String sql = "SELECT p.*, u.NAME, u.GENDER, "
                        + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST) AS like_cnt, "
                        + "(SELECT COUNT(*) FROM POST_LIKE pl WHERE pl.POST_idPOST = p.idPOST AND pl.USER_idUSER = ?) AS my_like "
                        + "FROM POST p JOIN USER u ON p.USER_idUSER = u.idUSER "
@@ -183,6 +185,7 @@ public class PostDAO {
                 bean.setIdPOST(rs.getInt("idPOST"));
                 bean.setUser(rs.getString("USER_idUSER"));
                 bean.setUserName(rs.getString("NAME"));
+                bean.setAuthorGender(rs.getInt("GENDER"));
                 bean.setDetail(rs.getString("detail"));
                 bean.setDate(rs.getTimestamp("DATE"));
                 bean.setLikeCount(rs.getInt("like_cnt"));
@@ -194,7 +197,7 @@ public class PostDAO {
         return list;
     }
     
-    // 6. 게시글 개수 세기 (마이페이지용)
+    // 6. 게시글 개수 (기존 동일)
     public int getPostCount(String userId) {
         int count = 0;
         Connection con = null; PreparedStatement pstmt = null; ResultSet rs = null;
@@ -210,7 +213,7 @@ public class PostDAO {
         return count;
     }
 
-    // [추가] 메인 페이지용 전체 게시글 수 계산 (페이징 계산을 위해 필요)
+    // 7. 전체 게시글 수 계산 (수정됨: 팔로잉 로직 변경)
     public int getTotalPostCount(String myId, String mode) {
         int count = 0;
         Connection con = null; PreparedStatement pstmt = null; ResultSet rs = null;
@@ -226,7 +229,8 @@ public class PostDAO {
                     + "    WHERE j1.USER_idUSER = ? "
                     + ")";
             } else if ("FOLLOW".equals(mode)) {
-                sql = "SELECT COUNT(*) FROM POST WHERE USER_idUSER IN (SELECT FOLLOWING FROM FOLLOW WHERE FOLLOWER = ?)";
+                // ▼▼▼ [수정] 내가(FOLLOWING) 팔로우한 사람(FOLLOWER)의 글 수 ▼▼▼
+                sql = "SELECT COUNT(*) FROM POST WHERE USER_idUSER IN (SELECT FOLLOWER FROM FOLLOW WHERE FOLLOWING = ?)";
             } else {
                 sql = "SELECT COUNT(*) FROM POST";
             }

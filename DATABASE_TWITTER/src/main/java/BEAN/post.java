@@ -14,6 +14,8 @@ public class post {
     private int likeCount;     // 좋아요 개수
     private boolean isLiked;   // 내가 좋아요 눌렀는지 여부
 
+
+    
     // Getter & Setter (기존 것 + 추가된 것)
     public int getIdPOST() { return idPOST; }
     public void setIdPOST(int idPOST) { this.idPOST = idPOST; }
@@ -39,4 +41,22 @@ public class post {
     
     public boolean isLiked() { return isLiked; }
     public void setLiked(boolean isLiked) { this.isLiked = isLiked; }
+ // [추가] 작성자 성별을 담을 변수
+    private int authorGender; 
+
+    public int getAuthorGender() { return authorGender; }
+    public void setAuthorGender(int authorGender) { this.authorGender = authorGender; }
+
+
+
+    // [추가] 성별에 따른 이미지 파일명 반환 (JSP에서 사용)
+    public String getProfileImage() {
+        if (this.authorGender == 1) {
+            return "1.png"; // 남성
+        } else if (this.authorGender == 2) {
+            return "2.png"; // 여성
+        } else {
+            return "profile_default.png"; // 기본
+        }
+    }
 }

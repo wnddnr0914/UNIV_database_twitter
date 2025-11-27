@@ -37,7 +37,11 @@
     ArrayList<user> list = dao.searchUsers(myId, keyword, pageNum, limit);
     int totalCount = dao.getSearchCount(myId, keyword);
     int totalPage = (int) Math.ceil((double) totalCount / limit);
+    UserDAO userDao = new UserDAO();
+    user myProfile = userDao.selectUserById(myId);
+    String myProfileImg = (myProfile != null) ? myProfile.getProfileImage() : "profile_default.png";
 %>
+
 
 <!DOCTYPE html>
 <html>
@@ -127,21 +131,15 @@
     <div class="header">
         <div class="header-left">
             <a href="main.jsp" class="logo">🐦</a>
-            
             <div class="nav-menu">
-                <a href="main.jsp" class="nav-item">
-                    <span>🏠</span> 홈
-                </a>
-                <a href="search.jsp" class="nav-item active">
-                    <span>🔍</span> 검색
-                </a>
+                <a href="main.jsp" class="nav-item active"><span>🏠</span> 홈</a>
+                <a href="search.jsp" class="nav-item"><span>🔍</span> 검색</a>
                 <a href="message_inbox.jsp" class="nav-item"><span>💬</span> 쪽지</a>
-                  <a href="group.jsp" class="nav-item"><span>👥</span> 그룹</a>
+                <a href="group.jsp" class="nav-item"><span>👥</span> 그룹</a>
             </div>
         </div>
-
-        <div class="header-right">
-            <div class="my-profile-img" style="background-image: url('my_profile.png'); background-size: cover;"></div>
+        <div class="header-right" onclick="location.href='mypage.jsp?id=<%=myId%>'">
+            <div class="my-profile-img" style="background-image: url('<%= myProfileImg %>');"></div>
             <span class="my-name"><%= myId %></span>
         </div>
     </div>
@@ -163,9 +161,10 @@
             <% } else { %>
                 <% for(user u : list) { %>
                <div class="user-item">
-    <div class="profile-img" 
-         style="background-image: url('default_profile.png'); background-size: cover; cursor: pointer;"
-         onclick="location.href='mypage.jsp?id=<%= u.getIdUSER() %>'"></div>
+   <div class="profile-img" 
+     style="background-image: url('<%= u.getProfileImage() %>'); background-size: cover; cursor: pointer;"
+     onclick="location.href='mypage.jsp?id=<%= u.getIdUSER() %>'">
+</div>
     
     <div class="user-info" 
          onclick="location.href='mypage.jsp?id=<%= u.getIdUSER() %>'" 

@@ -1,7 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="DAO.PostDAO, BEAN.post, java.util.ArrayList" %>
 <%@ page import="DAO.CommentDAO, BEAN.post_comment, BEAN.reply_comment" %>
-<%
+<%@ page import="DAO.UserDAO, BEAN.user" %> <%
     request.setCharacterEncoding("UTF-8");
     // 1. 로그인 체크
     String myId = (String) session.getAttribute("idKey");
@@ -16,31 +16,32 @@
     String tab = request.getParameter("tab");
     if (tab == null) tab = "ALL";
 
-    // 3. 게시글 리스트 가져오기 (페이징 적용)
+    // 3. 게시글 리스트 가져오기
     PostDAO dao = new PostDAO();
     
-    // 페이지 번호 받기
     int pageNum = 1;
     if(request.getParameter("page") != null) {
         pageNum = Integer.parseInt(request.getParameter("page"));
     }
-    int limit = 10; // 한 페이지에 10개씩
+    int limit = 10;
 
     ArrayList<post> list = null;
     
     if ("GROUP".equals(tab)) {
-        // 그룹 피드 (페이징 적용)
         list = dao.getGroupTimeline(myId, pageNum, limit);
     } else {
-        // 전체/팔로잉 피드 (페이징 적용)
         list = dao.getTimeline(myId, tab, pageNum, limit);
     }
     
-    // 전체 페이지 수 계산
     int totalCount = dao.getTotalPostCount(myId, tab);
     int totalPage = (int) Math.ceil((double) totalCount / limit);
     
     CommentDAO commentDao = new CommentDAO();
+
+    // 4. [추가] 헤더에 띄울 '내 프로필 사진' 가져오기
+    UserDAO userDao = new UserDAO();
+    user myProfile = userDao.selectUserById(myId);
+    String myProfileImg = (myProfile != null) ? myProfile.getProfileImage() : "profile_default.png";
 %>
 <!DOCTYPE html>
 <html>
@@ -48,6 +49,7 @@
     <meta charset="UTF-8">
     <title>홈 / 트위터</title>
     <style>
+        /* 기존 스타일 유지 */
         body { background-color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
         a { text-decoration: none; color: inherit; }
         
@@ -59,7 +61,9 @@
         .nav-item:hover { background-color: #f7f9fa; }
         .nav-item.active { font-weight: bold; }
         .header-right { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .my-profile-img { width: 40px; height: 40px; background-color: #ccc; border-radius: 50%; }
+        
+        /* 프로필 이미지 공통 스타일 */
+        .my-profile-img { width: 40px; height: 40px; background-color: #ccc; border-radius: 50%; background-size: cover; background-position: center; }
         .my-name { font-weight: bold; font-size: 15px; }
 
         .container { width: 600px; margin: 0 auto; border-left: 1px solid #eff3f4; border-right: 1px solid #eff3f4; min-height: 100vh; padding-bottom: 50px; }
@@ -123,7 +127,7 @@
             </div>
         </div>
         <div class="header-right" onclick="location.href='mypage.jsp?id=<%=myId%>'">
-            <div class="my-profile-img"></div>
+            <div class="my-profile-img" style="background-image: url('<%= myProfileImg %>');"></div>
             <span class="my-name"><%= myId %></span>
         </div>
     </div>
@@ -146,7 +150,7 @@
         </div>
 
         <div class="write-box">
-            <div class="my-profile-img"></div>
+            <div class="my-profile-img" style="background-image: url('<%= myProfileImg %>');"></div>
             <div class="write-input-area">
                 <form action="write_action.jsp" method="post">
                     <input type="hidden" name="tab" value="<%=tab%>">
@@ -177,7 +181,7 @@
                 
                 <div class="my-profile-img" 
                      onclick="location.href='mypage.jsp?id=<%= p.getUser() %>'" 
-                     style="cursor: pointer;"></div>
+                     style="cursor: pointer; background-image: url('<%= p.getProfileImage() %>');"></div>
                 
                 <div class="post-content">
                     <div class="post-header">

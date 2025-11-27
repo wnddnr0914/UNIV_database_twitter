@@ -193,7 +193,9 @@
             <div class="profile-header"></div>
             
             <div class="user-avatar-wrapper">
-                <div class="profile-photo"></div>
+                <div class="profile-photo" 
+                     style="background-image: url('<%= member.getProfileImage() %>'); background-size: cover;">
+                </div>
                 
                 <% if(userId.equals(myId)) { %>
                     <div>
@@ -252,7 +254,9 @@
                     <% } else { %>
                         <% for(post p : userPosts) { %>
                         <div class="post-item">
-                            <div class="profile-photo" style="width: 40px; height: 40px; border:none;"></div>
+                            <div class="profile-photo" 
+     style="background-image: url('<%= member.getProfileImage() %>'); background-size: cover;">
+</div>
                             <div class="post-content">
                                 <div class="post-header">
                                     <div>

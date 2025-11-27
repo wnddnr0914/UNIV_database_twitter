@@ -42,4 +42,14 @@ public class user {
 
     public boolean isFollowed() { return isFollowed; }
     public void setFollowed(boolean isFollowed) { this.isFollowed = isFollowed; }
+ // [추가] 성별에 따라 이미지 파일명을 반환하는 기능
+    public String getProfileImage() {
+        if (this.GENDER == 1) {
+            return "1.png"; // 남성 이미지
+        } else if (this.GENDER == 2) {
+            return "2.png"; // 여성 이미지
+        } else {
+            return "profile_default.png"; // 기본 이미지
+        }
+    }
 }
