@@ -220,7 +220,8 @@
                 </div>
 
                 <div class="user-details">
-                    <div>📅 가입일: (정보 없음)</div> 
+                    <%-- 가입일 표시 수정 --%>
+                    <div>📅 가입일: <%= member.getJOIN_DATE() != null ? member.getJOIN_DATE().toString().substring(0, 10) : "정보 없음" %></div>
                     <div>👤 성별: <%= genderText %></div>
                     <div>🎂 생년월일: <%= member.getBIRTH().toString() %></div>
                 </div>

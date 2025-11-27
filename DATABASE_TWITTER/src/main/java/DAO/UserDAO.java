@@ -56,7 +56,7 @@ public class UserDAO {
  		return bean;
  	}
 
-    // 2. 회원정보 가져오기 (마이페이지용)
+    // 2. 회원정보 가져오기 (수정)
     public user selectUserById(String id) {
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -75,6 +75,7 @@ public class UserDAO {
                 bean.setGENDER(rs.getInt("GENDER"));
                 bean.setBIRTH(rs.getDate("BIRTH"));
                 bean.setPASSWORD(rs.getString("PASSWORD"));
+                bean.setJOIN_DATE(rs.getTimestamp("JOIN_DATE"));  // 추가!
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -84,20 +85,25 @@ public class UserDAO {
         return bean;
     }
 
-    // 3. 회원가입
+
+    // 3. 회원가입 (수정)
     public boolean insertUser(user bean) {
         Connection con = null;
         PreparedStatement pstmt = null;
         boolean flag = false;
         try {
             con = pool.getConnection();
-            String sql = "INSERT INTO USER (idUSER, NAME, GENDER, BIRTH, PASSWORD) VALUES (?, ?, ?, ?, ?)";
+            
+            // JOIN_DATE는 DB에서 자동으로 현재시간 입력됨
+            String sql = "INSERT INTO USER (idUSER, NAME, GENDER, BIRTH, PASSWORD, JOIN_DATE) VALUES (?, ?, ?, ?, ?, NOW())";
+            
             pstmt = con.prepareStatement(sql);
             pstmt.setString(1, bean.getIdUSER());
             pstmt.setString(2, bean.getNAME());
             pstmt.setInt(3, bean.getGENDER());
             pstmt.setDate(4, bean.getBIRTH());
             pstmt.setString(5, bean.getPASSWORD());
+            
             if (pstmt.executeUpdate() == 1) flag = true;
         } catch (Exception e) {
             e.printStackTrace();

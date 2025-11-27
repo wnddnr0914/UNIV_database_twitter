@@ -1,6 +1,7 @@
 package BEAN;
 
 import java.sql.Date;
+import java.sql.Timestamp;  
 
 public class user {
 	private String idUSER;
@@ -8,6 +9,8 @@ public class user {
 	private int GENDER;
 	private Date BIRTH;
 	private String PASSWORD;
+    private Timestamp JOIN_DATE;  
+
 	public String getIdUSER() {
 		return idUSER;
 	}
@@ -32,6 +35,13 @@ public class user {
 	public void setBIRTH(Date bIRTH) {
 		BIRTH = bIRTH;
 	}
+    public Timestamp getJOIN_DATE() {
+        return JOIN_DATE;
+    }
+    
+    public void setJOIN_DATE(Timestamp JOIN_DATE) {
+        this.JOIN_DATE = JOIN_DATE;
+    }
 	public String getPASSWORD() {
 		return PASSWORD;
 	}
