@@ -3,10 +3,8 @@
 <%@ page import="BEAN.message" %>
 <%@ page import="java.sql.Timestamp" %>
 <% 
-    // ⭐ MVC1 Controller 영역 ⭐
     request.setCharacterEncoding("UTF-8"); 
     
-    // 1. 로그인 체크 (세션 확인)
     String myId = (String) session.getAttribute("idKey");
     
     if (myId == null) {
@@ -22,18 +20,13 @@
     String resultMsg = "";
     String statusClass = "";
     
-    // 2. 파라미터 받기 (GET으로 들어온 수신자 ID 처리)
-    // 예: mypage.jsp에서 '쪽지 보내기' 클릭 시 recipientId가 넘어올 수 있음
     String recipientId = request.getParameter("recipientId");
-    if (recipientId == null) recipientId = ""; // 없으면 빈 문자열
+    if (recipientId == null) recipientId = "";
 
-    // 3. POST 요청 처리 (실제 전송 버튼 클릭 시)
     if (request.getMethod().equalsIgnoreCase("POST")) {
-        // 폼에서 입력한 수신자 ID와 내용
         String targetId = request.getParameter("recipientId");
         String messageText = request.getParameter("messageText");
         
-        // 갱신된 recipientId 유지 (폼에 다시 보여주기 위함)
         recipientId = targetId; 
         
         if (targetId != null && !targetId.isEmpty() && messageText != null && !messageText.trim().isEmpty()) {
@@ -41,23 +34,18 @@
             MessageDAO msgDAO = new MessageDAO();
             message msgBean = new message();
             
-            // ⭐ 보내는 사람은 무조건 세션의 '나' (위조 방지)
             msgBean.setSender(myId);
             msgBean.setRecipient(targetId);
             msgBean.setTEXT(messageText);
             
-            // 현재 시간 설정
             Timestamp now = new Timestamp(System.currentTimeMillis());
             msgBean.setDATE(now);
             
-            // DAO 호출
             boolean success = msgDAO.sendMessage(msgBean);
             
             if (success) {
                 resultMsg = "⭐ 메시지 전송 성공! (" + targetId + "님에게)";
                 statusClass = "status-success";
-                // 성공 시 내용은 비우기 (또 보낼 수 있으니까 수신자는 유지)
-                // messageText = ""; 
             } else {
                 resultMsg = "❌ 메시지 전송 실패 (존재하지 않는 ID일 수 있습니다)";
                 statusClass = "status-failure";
@@ -73,111 +61,239 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>쪽지 보내기</title>
+    <title>쪽지 보내기 / X</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* CSS 변수 (globals.css 스타일 유지) */
-        :root {
-            --background: #ffffff;
-            --foreground: oklch(0.145 0 0);
-            --primary: #030213;
-            --primary-foreground: oklch(1 0 0);
-            --destructive: #d4183d;
-            --radius: 0.625rem;
-            --border: rgba(0, 0, 0, 0.1);
-            --input: #f3f3f5;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
+        
         body {
-            background-color: #f7f9f9;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
+            padding: 20px;
         }
+        
         .card-container {
-            background: var(--background);
-            border-radius: var(--radius);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
             width: 100%;
-            max-width: 450px;
-            text-align: center;
-            border: 1px solid var(--border);
+            max-width: 550px;
+            animation: slideIn 0.5s ease-out;
         }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .result-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin-bottom: 20px;
+            font-size: 32px;
+            font-weight: 800;
+            color: #14171a;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
+        
+        .result-subtitle {
+            font-size: 15px;
+            color: #657786;
+            margin-bottom: 30px;
+        }
+        
         .status-message {
-            font-size: 1rem;
-            padding: 10px 0;
-            border-radius: 5px;
+            font-size: 16px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        
+        .status-success { 
+            color: #17bf63;
+            background-color: rgba(23, 191, 99, 0.1);
+            border: 2px solid rgba(23, 191, 99, 0.3);
+        }
+        
+        .status-failure { 
+            color: #e0245e;
+            background-color: rgba(224, 36, 94, 0.1);
+            border: 2px solid rgba(224, 36, 94, 0.3);
+        }
+        
+        .form-group { 
             margin-bottom: 25px;
         }
-        .status-success { color: #008000; background-color: #e8f5e9; border: 1px solid #c8e6c9; }
-        .status-failure { color: #d4183d; background-color: #ffebee; border: 1px solid #ffcdd2; }
         
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
-        .input-field {
-            width: 100%; padding: 10px;
-            background-color: var(--input);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            box-sizing: border-box;
-            resize: none;
+        .form-label { 
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            color: #14171a;
         }
+        
+        .input-field {
+            width: 100%;
+            padding: 14px 18px;
+            background-color: #f7f9fa;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            background-color: white;
+            border-color: #1da1f2;
+            box-shadow: 0 0 0 4px rgba(29, 161, 242, 0.1);
+        }
+        
+        .input-field:disabled {
+            background-color: #e1e8ed;
+            color: #657786;
+            cursor: not-allowed;
+        }
+        
+        .input-field::placeholder {
+            color: #a0aec0;
+        }
+        
+        textarea.input-field {
+            resize: vertical;
+            min-height: 150px;
+            font-family: inherit;
+        }
+        
         .button-submit {
-            width: 100%; padding: 12px; margin-top: 15px;
-            background-color: #1d9bf0; /* 트위터 블루 */
+            width: 100%;
+            padding: 14px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #1da1f2 0%, #0d8bd9 100%);
             color: white;
             border: none;
-            border-radius: 30px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 16px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(29, 161, 242, 0.4);
         }
-        .button-submit:hover { background-color: #1a8cd8; }
         
-        .nav-links { margin-top: 20px; font-size: 0.9rem; }
-        .nav-links a { color: #536471; text-decoration: none; margin: 0 10px; }
-        .nav-links a:hover { color: #1d9bf0; text-decoration: underline; }
+        .button-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(29, 161, 242, 0.5);
+        }
+        
+        .button-submit:active {
+            transform: translateY(0);
+        }
+        
+        .nav-links { 
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #e1e8ed;
+            font-size: 15px;
+            text-align: center;
+        }
+        
+        .nav-links a { 
+            color: #1da1f2;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+        
+        .nav-links a:hover { 
+            text-decoration: underline;
+        }
+        
+        .sender-info {
+            background: linear-gradient(135deg, #f7f9fa 0%, #e1e8ed 100%);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e1e8ed;
+        }
+        
+        .sender-info-label {
+            font-size: 13px;
+            color: #657786;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        
+        .sender-info-value {
+            font-size: 18px;
+            color: #14171a;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
     <div class="card-container">
         <h1 class="result-title">📝 쪽지 보내기</h1>
+        <p class="result-subtitle">다른 사용자에게 메시지를 전송하세요</p>
         
         <% if (!resultMsg.isEmpty()) { %>
-            <p class="status-message <%= statusClass %>">
+            <div class="status-message <%= statusClass %>">
                 <%= resultMsg %>
-            </p>
+            </div>
         <% } %>
         
         <form action="message_send_action.jsp" method="post">
-            <div class="form-group">
-                <span class="form-label">보내는 사람</span>
-                <input type="text" value="<%= myId %>" disabled class="input-field" style="color: #536471; background-color: #e9ecef;">
+            <div class="sender-info">
+                <div class="sender-info-label">보내는 사람</div>
+                <div class="sender-info-value"><%= myId %></div>
             </div>
 
             <div class="form-group">
                 <label for="recipientId" class="form-label">받는 사람 ID</label>
-                <input id="recipientId" type="text" name="recipientId" value="<%= recipientId %>" required placeholder="예: elon_musk" class="input-field">
+                <input id="recipientId" 
+                       type="text" 
+                       name="recipientId" 
+                       value="<%= recipientId %>" 
+                       required 
+                       placeholder="예: elon_musk" 
+                       class="input-field"
+                       autofocus>
             </div>
 
             <div class="form-group">
                 <label for="messageText" class="form-label">메시지 내용</label>
-                <textarea id="messageText" name="messageText" rows="5" required placeholder="내용을 입력하세요..." class="input-field"></textarea>
+                <textarea id="messageText" 
+                          name="messageText" 
+                          required 
+                          placeholder="내용을 입력하세요..." 
+                          class="input-field"></textarea>
             </div>
             
             <input type="submit" value="전송하기" class="button-submit">
         </form>
         
         <div class="nav-links">
-            <a href="message_inbox.jsp">📩 쪽지함으로</a> |
+            <a href="message_inbox.jsp">📩 쪽지함으로</a>
+            |
             <a href="main.jsp">🏠 메인으로</a>
         </div>
     </div>

@@ -4,7 +4,6 @@
 <%
     request.setCharacterEncoding("UTF-8");
 
-    // 0. 이미 로그인된 상태라면 메인으로 튕겨내기 (세션 확인)
     String currentId = (String) session.getAttribute("idKey");
     if (currentId != null) {
         response.sendRedirect("main.jsp");
@@ -13,33 +12,21 @@
 
     String errorMsg = "";
     
-    // 1. POST 요청 처리 (로그인 버튼 클릭 시)
     if (request.getMethod().equalsIgnoreCase("POST")) {
         String userId = request.getParameter("userId");
         String userPw = request.getParameter("userPw");
         
         if (userId != null && userPw != null) {
             UserDAO dao = new UserDAO();
-            
-            // ⭐ DB 연동: 실제 MySQL에서 아이디/비번 확인
             user member = dao.loginCheck(userId, userPw); 
             
             if (member != null) {
-                // ---------------------------------------------------------
-                // ⭐ [핵심] 세션 생성 (가장 중요한 부분)
-                // 이제 'elon_musk' 같은 가짜 데이터 대신, 로그인한 진짜 ID가 저장됩니다.
-                // ---------------------------------------------------------
                 session.setAttribute("idKey", member.getIdUSER());
-                session.setAttribute("nameKey", member.getNAME()); // 이름도 저장해두면 편함
-                
-                // 세션 유지 시간 설정 (예: 60분)
+                session.setAttribute("nameKey", member.getNAME());
                 session.setMaxInactiveInterval(60 * 60); 
-                
-                // 로그인 성공 시 홈(타임라인)으로 이동
                 response.sendRedirect("main.jsp");
                 return; 
             } else {
-                // 로그인 실패
                 errorMsg = "아이디 또는 비밀번호가 일치하지 않습니다.";
             }
         }
@@ -49,108 +36,275 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>X 가입하기 및 로그인</title>
+<title>X 로그인</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-/* CSS 변수 (globals.css 스타일 유지) */
 :root {
+    --primary: #1da1f2;
+    --primary-dark: #0d8bd9;
+    --text: #14171a;
+    --text-secondary: #657786;
     --background: #ffffff;
-    --foreground: oklch(0.145 0 0);
-    --primary: #030213;
-    --primary-foreground: oklch(1 0 0);
-    --border: rgba(0, 0, 0, 0.1);
-    --radius: 0.625rem;
-    --input: #f3f3f5;
-    --muted-foreground: #717182;
+    --border: #e1e8ed;
+    --error: #e0245e;
+    --success: #17bf63;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    background-color: var(--background);
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
 }
-.card {
+
+.login-container {
     background: white;
-    border-radius: var(--radius);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     width: 100%;
-    max-width: 400px;
+    max-width: 450px;
+    overflow: hidden;
+    animation: slideIn 0.5s ease-out;
 }
-.card-header { text-align: center; padding: 24px; border-bottom: 1px solid var(--border); }
-.card-title { font-size: 1.5rem; font-weight: bold; }
-.logo-icon { font-size: 2rem; color: #1d9bf0; margin-bottom: 1rem; }
 
-.tabs-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    background-color: var(--border);
-    border-radius: 9999px;
-    padding: 4px;
-    margin-bottom: 16px;
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-.tabs-trigger {
-    padding: 8px 12px;
-    font-weight: 500;
-    border-radius: 9999px;
-    cursor: pointer;
+
+.login-header {
     text-align: center;
-    text-decoration: none;
-    color: var(--foreground);
-    transition: background-color 0.2s;
+    padding: 40px 30px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
 }
-.tabs-trigger.active { background-color: var(--background); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
 
-.form-group { margin-bottom: 16px; }
-.input-field {
-    width: 100%; padding: 10px;
-    background-color: var(--input);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-sizing: border-box;
-    margin-top: 4px;
+.logo-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    animation: float 3s ease-in-out infinite;
 }
-.button-submit {
-    width: 100%; padding: 12px; margin-top: 15px;
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    border: none;
-    border-radius: 30px;
-    font-size: 1rem;
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.login-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.login-header p {
+    font-size: 15px;
+    opacity: 0.9;
+}
+
+.login-body {
+    padding: 35px 30px;
+}
+
+.tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 30px;
+    background: #f7f9fa;
+    padding: 5px;
+    border-radius: 12px;
+}
+
+.tab {
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 15px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: opacity 0.2s;
-    font-weight: bold;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+    text-decoration: none;
 }
-.button-submit:hover { opacity: 0.9; }
-.error-msg { color: #d4183d; font-size: 0.875rem; margin-top: 8px; text-align: center; font-weight: bold; }
+
+.tab.active {
+    background: white;
+    color: var(--text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab:not(.active):hover {
+    color: var(--text);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.input-field {
+    width: 100%;
+    padding: 14px 18px;
+    background: #f7f9fa;
+    border: 2px solid #e1e8ed;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    color: var(--text);
+}
+
+.input-field:focus {
+    outline: none;
+    background: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(29, 161, 242, 0.1);
+}
+
+.input-field::placeholder {
+    color: #a0aec0;
+}
+
+.button-submit {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(29, 161, 242, 0.4);
+}
+
+.button-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(29, 161, 242, 0.5);
+}
+
+.button-submit:active {
+    transform: translateY(0);
+}
+
+.error-msg {
+    color: var(--error);
+    font-size: 14px;
+    margin-top: 15px;
+    text-align: center;
+    font-weight: 600;
+    padding: 12px;
+    background: rgba(224, 36, 94, 0.1);
+    border-radius: 10px;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.divider span {
+    padding: 0 15px;
+}
+
+.info-box {
+    text-align: center;
+    padding: 20px;
+    background: #f7f9fa;
+    border-radius: 12px;
+    margin-top: 20px;
+}
+
+.info-box p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+    .login-container {
+        border-radius: 15px;
+    }
+    
+    .login-header {
+        padding: 30px 20px 20px;
+    }
+    
+    .login-header h1 {
+        font-size: 24px;
+    }
+    
+    .login-body {
+        padding: 25px 20px;
+    }
+}
 </style>
 </head>
 <body>
-    <div class="card">
-        <div class="card-header">
+    <div class="login-container">
+        <div class="login-header">
             <div class="logo-icon">🐦</div>
-            <div class="card-title">소셜 미디어에 오신 것을 환영합니다</div>
-            <p style="color:var(--muted-foreground); font-size:0.9rem; margin-top:5px;">로그인하거나 새 계정을 만드세요</p>
+            <h1>환영합니다</h1>
+            <p>소셜 미디어에 로그인하세요</p>
         </div>
         
-        <div style="padding: 24px;">
-            <div class="tabs-list">
-                <div class="tabs-trigger active">로그인</div>
-                <a href="signup.jsp" class="tabs-trigger">회원가입</a>
+        <div class="login-body">
+            <div class="tabs">
+                <div class="tab active">로그인</div>
+                <a href="signup.jsp" class="tab">회원가입</a>
             </div>
 
             <form method="POST" action="login.jsp">
-                
                 <div class="form-group">
                     <label for="login-email">아이디</label>
-                    <input id="login-email" type="text" name="userId" placeholder="아이디" required class="input-field">
+                    <input id="login-email" type="text" name="userId" placeholder="아이디를 입력하세요" required class="input-field" autofocus>
                 </div>
                 
                 <div class="form-group">
                     <label for="login-password">비밀번호</label>
-                    <input id="login-password" type="password" name="userPw" placeholder="••••••••" required class="input-field">
+                    <input id="login-password" type="password" name="userPw" placeholder="비밀번호를 입력하세요" required class="input-field">
                 </div>
                 
                 <button type="submit" class="button-submit">로그인</button>
@@ -159,8 +313,15 @@ body {
             <% if (!errorMsg.isEmpty()) { %>
                 <p class="error-msg">⚠️ <%= errorMsg %></p>
             <% } %>
-
-         
+            
+            <div class="divider">
+                <span>또는</span>
+            </div>
+            
+            <div class="info-box">
+                <p>아직 계정이 없으신가요?<br>
+                <strong>회원가입</strong> 탭에서 새로운 계정을 만들어보세요! 🚀</p>
+            </div>
         </div>
     </div>
 </body>
