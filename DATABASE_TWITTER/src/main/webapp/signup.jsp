@@ -283,26 +283,8 @@ select.input-field {
     75% { transform: translateX(10px); }
 }
 
-.info-box {
-    text-align: center;
-    padding: 20px;
-    background: #f7f9fa;
-    border-radius: 12px;
-    margin-top: 20px;
-}
-
-.info-box p {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-}
-
-.info-box strong {
-    color: var(--text);
-}
-
-/* Progress indicator */
-.progress-indicator {
+/* Progress indicator styles removed */
+/* .progress-indicator {
     display: flex;
     justify-content: center;
     gap: 8px;
@@ -321,7 +303,7 @@ select.input-field {
     background: var(--primary);
     width: 24px;
     border-radius: 4px;
-}
+} */
 
 /* 반응형 디자인 */
 @media (max-width: 480px) {
@@ -410,11 +392,13 @@ select.input-field {
         </div>
         
         <div class="signup-body">
+            <%--
             <div class="progress-indicator">
                 <div class="progress-dot active"></div>
                 <div class="progress-dot"></div>
                 <div class="progress-dot"></div>
             </div>
+            --%>
             
             <div class="tabs">
                 <a href="login.jsp" class="tab">로그인</a>
@@ -465,10 +449,12 @@ select.input-field {
                 <p class="error-msg">⚠️ <%= resultMsg %></p>
             <% } %>
             
+            <%--
             <div class="info-box">
                 <p>계정을 생성하면 <strong>이용약관</strong> 및<br>
                 <strong>개인정보 보호정책</strong>에 동의하게 됩니다.</p>
             </div>
+            --%>
         </div>
     </div>
 </body>
